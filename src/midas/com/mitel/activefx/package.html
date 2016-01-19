@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+</head>
+<body bgcolor="white">
+
+<p class="MsoNormalIndent">This is the asynchronous communication framework
+built on top of the reactor pattern. A few concepts need to be explained before
+going further into the design discussion.</p>
+<ul>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">Acceptor</i> –
+    Object-oriented analog to a server port listening to connection requests
+    from clients via the <span>accept</span>()
+    method. Acceptors are typically used by server applications to accept and
+    handle clients’ connection requests.</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">Connection </i>– A logical
+    two-way communication pipe (stream based) nailed-up between two endpoints.
+    Data pumped into one end is received at the other. Since a connection is
+    between two endpoints, one is typically the server, the other the client. A
+    normal scenario is for the server to use an Acceptor to wait for client
+    connection requests, the client conversely creates a connection and initiate
+    the connect request with the server. Ultimately, both server and client end
+    up with a connection object each (representing the same logical
+    communication pipe).</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">Domain </i>– Grouping of
+    connections and acceptors driven by the same threads (one reactor thread and
+    one FSM thread). An application may have more than one Active FX domains,
+    possibly for the purpose of prioritizing different services.</li>
+</ul>
+<p class="MsoNormalIndent">Since there are multiple types of connections, an
+interface (<span>AfxConnection</span>)
+was introduced to abstract out the differences in the implementation. There is
+only one implementation of the acceptor envisioned, as such a single
+implementation class (<span>AfxAcceptor</span>)
+that also representing the interface is provided.</p>
+<p class="MsoNormalIndent">Three types of connections are provided by the Active
+FX framework:</p>
+<ol>
+  <li>
+    <p class="Numbered">Plain TCP/IP (<span>AfxConnectionTcp</span>),</li>
+  <li>
+    <p class="Numbered">SSL-over-TCP/IP (<span>AfxConnectionTLS</span>),</li>
+  <li>
+    <p class="Numbered">UDP (<span>AfxConnectionUdp</span>).</li>
+</ol>
+<span>The single acceptor implementation supports both
+types of TCP/IP connections (secured and otherwise). The UDP-based connections
+have no acceptor due to their inherent datagram heritage; the clients and
+servers typically configure the two endpoints to reference each other’s UDP
+ports.</span> 
+
+
+<h2>Package Specification</h2>
+
+Requires J2SE SDK 1.5.0 and above.
+
+<h2>Related Documentation</h2>
+
+For overviews, tutorials, examples, guides, and tool documentation, please see:
+<ul>
+  <li>MiDAS Programmer's Guide</li>
+</ul>
+
+<!-- Put @see and @since tags down here. -->
+
+</body>
+</html>

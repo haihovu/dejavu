@@ -1,0 +1,51 @@
+#########################################################################
+#
+# This makefile is used to build the Java side of MiDAS and also to sign
+# the results so that they can be web-deployed:
+#
+#########################################################################
+
+all: build_all;
+.PHONY: all
+
+clean: clean_all
+.PHONY: clean
+
+klocwork: clean
+	./initview.sh
+	cd antbuild && kwant
+	
+ifdef nogendoc
+NOGENDOC=-Dnogendoc=1
+else
+NOGENDOC=
+endif
+
+#-------------------------------------------------------------------------------
+#                               Making Java Components
+#-------------------------------------------------------------------------------
+build_midas:
+	./initview.sh
+	cd antbuild && ant build-midas-dist $(NOGENDOC)
+
+clean_midas:
+	cd antbuild && ant clean-midas-dist
+	
+build_midas_base:
+	./initview.sh
+	cd antbuild && ant build-midas-base $(NOGENDOC)
+
+clean_midas_base:
+	cd antbuild && ant clean-midas-base
+
+rebuild_midas: clean_midas build_midas
+
+build_all:
+	./initview.sh
+	cd antbuild && ant $(NOGENDOC)
+
+clean_all:
+	cd antbuild && ant clean
+
+rebuild_all: clean_all build_all
+

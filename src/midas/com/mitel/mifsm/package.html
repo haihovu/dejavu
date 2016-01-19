@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+</head>
+<body bgcolor="white">
+
+<p class="MsoNormalIndent">MiDAS’s MiFSM framework is a Java port of the C++
+version in the Platform Services area. Some improvements were made; many of
+which were results of experience gained from the C++ implementation, while
+others were due to features available in the Java platform.</p>
+<p class="MsoNormalIndent">Before further technical discussion of the framework
+is carried out, some terminology should be explained.</p>
+<ul>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">Finite state machine</i> –
+    The abstract concept of one or more objects that have multiple states
+    (we’ll refer to these as <i style="mso-bidi-font-style:normal">state-context</i>),
+    and the framework that drives their transition from one state to another
+    based on some external stimuli (events).</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">State </i>– An English major
+    will explain what the word state means, but in the context of the FSM
+    discussion, each state has two optional actions, an entry action which gets
+    executed upon entry into the state, and an exit action which gets executed
+    upon exit of the state.</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">State transition </i>– The
+    act of changing states for a state-context. Each transition references a
+    begin state, an end state, a guard, and an action. The begin and end states
+    are self-explanatory, the guard is an optional Boolean expression that
+    determines whether the state transition is allowed to occur, and the action
+    is an optional function that gets executed during the state transition (only
+    executed if the guard evaluates to true).</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">Event </i>– In the context of
+    the FSM discussion, this is a stimulus from the system that triggers a state
+    change in a state-context. Each event is associated with a specific
+    state-context, and has an event ID that allows the FSM to identify it for
+    the purpose of locating the appropriate state transition. Events may have
+    other custom attributes to convey extra information to the actions and
+    guards that handle them.</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">State chart</i> – A formal
+    description of the states, transitions, and events associated with a
+    particular finite state machine.</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">FSM context </i>– Synonym for
+    state-context. Each state-context can be in only one state at any one time;
+    this is referred to as the current state.</li>
+  <li>
+    <p class="Bullet" style="text-indent:-18.0pt"><span style="font-style: normal; font-variant: normal; font-weight: normal; font-size: 7.0pt; font-family: Times New Roman; mso-list: Ignore">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </span><i style="mso-bidi-font-style:normal">FSM domain</i> – Representing
+    a single FSM, this contains the state chart information for that FSM, and
+    has the active thread to shepherd all state-contexts belonging to the FSM
+    (all having the same state chart). Applications that have state-contexts
+    with different state charts will require many FSM domains, one per state
+    chart.</li>
+</ul>
+
+
+<h2>Package Specification</h2>
+
+Requires J2SE SDK 1.5.0 and above.
+
+<h2>Related Documentation</h2>
+
+For overviews, tutorials, examples, guides, and tool documentation, please see:
+<ul>
+  <li>MiDAS Programmer's Guide</li>
+</ul>
+
+<!-- Put @see and @since tags down here. -->
+
+</body>
+</html>
