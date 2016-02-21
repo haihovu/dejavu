@@ -2,6 +2,6 @@ antbuild/
 antdist/
 dist/
 build/
-/proj/db_util/nbproject/private/
+/proj/db-util/nbproject/private/
 /proj/server/nbproject/private/
 /proj/midas/nbproject/private/
