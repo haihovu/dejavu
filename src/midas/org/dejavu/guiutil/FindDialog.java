@@ -98,7 +98,7 @@ public class FindDialog extends JDialog
         findDialogCancel = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("com/mitel/guiutil/GeneralGui"); // NOI18N
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui"); // NOI18N
         setTitle(bundle.getString("findTitleLabel")); // NOI18N
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {

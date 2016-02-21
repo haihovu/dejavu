@@ -221,28 +221,22 @@ public class PasswordDialog extends javax.swing.JDialog
 	public static void main(String args[])
 	{
 		DjvLookAndFeel.setCurrentLookAndFeel(DjvLookAndFeel.LAF_SUBSTANCE_CREME_COFFEE);
-		java.awt.EventQueue.invokeLater(new Runnable()
-		{
-			private final Frame frame = new javax.swing.JFrame();
-			@SuppressWarnings("ResultOfObjectAllocationIgnored")
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			final Frame frame = new javax.swing.JFrame();
+			new PasswordDialog(frame, new PasswordDialog.PasswordListener()
 			{
-				new PasswordDialog(frame, new PasswordDialog.PasswordListener()
+				@Override
+				public void commit(String oldPassword, String newPassword, PasswordDialog dialog)
 				{
-					@Override
-					public void commit(String oldPassword, String newPassword, PasswordDialog dialog)
-					{
-						frame.dispose();
-					}
-					
-					@Override
-					public void cancel(PasswordDialog dialog)
-					{
-						frame.dispose();
-					}
-				});
-			}
+					frame.dispose();
+				}
+				
+				@Override
+				public void cancel(PasswordDialog dialog)
+				{
+					frame.dispose();
+				}
+			});
 		});
 	}
 	

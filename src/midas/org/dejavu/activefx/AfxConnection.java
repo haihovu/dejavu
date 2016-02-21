@@ -4,10 +4,10 @@ package org.dejavu.activefx;
 
 import java.nio.ByteBuffer;
 
-import org.dejavu.mifsm.FsmContext;
-import org.dejavu.mifsm.FsmDomain;
-import org.dejavu.mifsm.FsmEvent;
-import org.dejavu.mifsm.FsmState;
+import org.dejavu.fsm.FsmContext;
+import org.dejavu.fsm.FsmDomain;
+import org.dejavu.fsm.FsmEvent;
+import org.dejavu.fsm.FsmState;
 import org.dejavu.util.DjvExceptionUtil;
 import org.dejavu.util.DjvLogMsg.Category;
 import org.dejavu.util.DjvSystem;

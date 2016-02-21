@@ -25,8 +25,8 @@ import javax.swing.plaf.basic.BasicComboBoxEditor;
 public class DjvComboBox extends JComboBox
 {
 	private static final long serialVersionUID = 1L;
-	private DjvComboBox.MiComboBoxEditor m_MyEditor = new DjvComboBox.MiComboBoxEditor();
-	private DjvComboBox.MiComboBoxActionListener m_ActionListener;
+	private final DjvComboBox.MiComboBoxEditor m_MyEditor = new DjvComboBox.MiComboBoxEditor();
+	private final DjvComboBox.MiComboBoxActionListener m_ActionListener;
 	
 	private boolean m_UpdatingMode = false;
 	
@@ -49,6 +49,7 @@ public class DjvComboBox extends JComboBox
 	/**
 	 * Since the JComboBox's focus is made up of sub-component, this helps identify the
 	 * subcomponent to receive focus attentions: the text field of the editor.
+	 * @return 
 	 */	
 	@Override
 	public boolean requestFocusInWindow()
@@ -147,6 +148,7 @@ public class DjvComboBox extends JComboBox
 		{
 		}
 		
+		@Override
 		public void actionPerformed(ActionEvent actionEvent)
 		{
 			if(actionEvent.getActionCommand().equals("comboBoxEdited")

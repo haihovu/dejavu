@@ -5,9 +5,6 @@
 package org.dejavu.netutil;
 
 import org.dejavu.util.DjvException;
-import org.dejavu.util.DjvExceptionUtil;
-import org.dejavu.util.DjvLogMsg;
-import org.dejavu.util.DjvSystem;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.security.Key;
@@ -23,8 +20,6 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.commons.codec.binary.Base64;
-import sun.security.tools.keytool.CertAndKeyGen;
-import sun.security.x509.X500Name;
 
 /**
  * This is a manager of a keystore used for maintaining trust certificates,
@@ -116,27 +111,6 @@ public class DjvCertManager {
 		String x = pem.replaceAll("-----BEGIN CERTIFICATE-----", "").replaceAll("-----END CERTIFICATE-----", "");
 		byte[] c = Base64.decodeBase64(x);
 		return CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(c));
-	}
-	
-	@SuppressWarnings("UseSpecificCatch")
-	public static void main(String[] args) {
-		DjvSystem.setLogLevel(2);
-		try {
-			CertAndKeyGen ckg = new CertAndKeyGen("RSA", "SHA1WithRSA");
-			ckg.generate(1024);
-			X500Name name = new X500Name("Hai Vu", "R&D", "Mitel", "Kanata", "ON", "CA");
-			X509Certificate cert = ckg.getSelfCertificate(name, 24 * 3600/*Seconds*/);
-			String pem = certToPem(cert);
-			Certificate c = pemToCert(pem);
-			if(cert.equals(c)) {
-				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Success: " + cert + "->" + pem + "->" + c);
-			} else {
-				DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Failed: " + cert + "->" + pem + "->" + c);
-			}
-		}
-		catch(Exception ex) {
-			DjvSystem.logError(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
-		}
 	}
 	
 	/**

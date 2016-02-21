@@ -80,8 +80,8 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		m_UpdateThresholdMs = updateThresholdMs;
 		m_LogTree = new DjvLogTree(title, maxSize);
 		m_Popup = new JPopupMenu();
-		JMenuItem copy = new JMenuItem(new ImageIcon(getClass().getResource("/images/page_copy.png")));
-		copy.setText(java.util.ResourceBundle.getBundle("com/mitel/guiutil/GeneralGui").getString("guiutil.CopySelectedMsgs"));
+		JMenuItem copy = new JMenuItem(new ImageIcon(getClass().getResource("/icons/page_copy.png")));
+		copy.setText(java.util.ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui").getString("guiutil.CopySelectedMsgs"));
 		copy.addActionListener(new AbstractAction()
 		{
 			private static final long serialVersionUID = 1L;
@@ -92,8 +92,8 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 			}
 		});
 		m_Popup.add(copy);
-		JMenuItem copyAll = new JMenuItem(new ImageIcon(getClass().getResource("/images/page_edit.png")));
-		copyAll.setText(java.util.ResourceBundle.getBundle("com/mitel/guiutil/GeneralGui").getString("guiutil.SelectAllMsgs"));
+		JMenuItem copyAll = new JMenuItem(new ImageIcon(getClass().getResource("/icons/page_edit.png")));
+		copyAll.setText(java.util.ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui").getString("guiutil.SelectAllMsgs"));
 		copyAll.addActionListener(new AbstractAction()
 		{
 			private static final long serialVersionUID = 1L;
@@ -109,7 +109,7 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		super.setViewportView(m_LogTree);
 		addMouseListener(new PopupListener());
-		m_LogTree.setToolTipText(java.util.ResourceBundle.getBundle("com/mitel/guiutil/GeneralGui").getString("guiutil.LogClickHint"));
+		m_LogTree.setToolTipText(java.util.ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui").getString("guiutil.LogClickHint"));
 		getViewport().addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent ce) {

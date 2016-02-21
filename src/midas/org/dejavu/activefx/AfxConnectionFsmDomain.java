@@ -2,10 +2,10 @@
 
 package org.dejavu.activefx;
 
-import org.dejavu.mifsm.FsmAction;
-import org.dejavu.mifsm.FsmEvent;
-import org.dejavu.mifsm.FsmDomain;
-import org.dejavu.mifsm.FsmException;
+import org.dejavu.fsm.FsmAction;
+import org.dejavu.fsm.FsmEvent;
+import org.dejavu.fsm.FsmDomain;
+import org.dejavu.fsm.FsmException;
 import org.dejavu.util.DjvLogMsg.Category;
 import org.dejavu.util.DjvSystem;
 

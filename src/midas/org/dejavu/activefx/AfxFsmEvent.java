@@ -2,8 +2,8 @@
 
 package org.dejavu.activefx;
 
-import org.dejavu.mifsm.FsmContext;
-import org.dejavu.mifsm.FsmEvent;
+import org.dejavu.fsm.FsmContext;
+import org.dejavu.fsm.FsmEvent;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 

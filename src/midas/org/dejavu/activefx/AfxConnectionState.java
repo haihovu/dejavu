@@ -1,7 +1,7 @@
 package org.dejavu.activefx;
 
-import org.dejavu.mifsm.FsmAction;
-import org.dejavu.mifsm.FsmState;
+import org.dejavu.fsm.FsmAction;
+import org.dejavu.fsm.FsmState;
 
 /**
  * Customised state for connections.

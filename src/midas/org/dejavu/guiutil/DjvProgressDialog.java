@@ -300,7 +300,7 @@ public class DjvProgressDialog extends JDialog
 					}
 				});
 				if(dialog != null) {
-					dialog.setOptionalText(ResourceBundle.getBundle("com/mitel/guiutil/GeneralGui").getString("pleaseWaitLabel"));
+					dialog.setOptionalText(ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui").getString("pleaseWaitLabel"));
 					dialog.setProgress(55);
 					dialog.setVisible(true);
 				}

@@ -6,7 +6,7 @@ import org.dejavu.util.DjvSystem;
 import java.net.SocketException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import org.dejavu.mifsm.FsmEvent;
+import org.dejavu.fsm.FsmEvent;
 import org.dejavu.util.DjvExceptionUtil;
 import org.dejavu.util.DjvLogMsg.Category;
 import java.nio.channels.SelectableChannel;
