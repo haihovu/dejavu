@@ -23,7 +23,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.commons.codec.binary.Base64;
-import sun.security.x509.CertAndKeyGen;
+import sun.security.tools.keytool.CertAndKeyGen;
 import sun.security.x509.X500Name;
 
 /**
