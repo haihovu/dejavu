@@ -315,12 +315,12 @@ public class DjvLanguage
 		try
 		{
 			StringBuilder fullString = new StringBuilder(64)
-				.append(java.util.ResourceBundle.getBundle("com/mitel/miutil/DjvLanguage").getString(lang.getLanguageCode()));
+				.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage").getString(lang.getLanguageCode()));
 
 			String locale = lang.getLocaleCode();
 			if((null != locale)&&(locale.length() > 0))
 			{
-				fullString.append("-").append(java.util.ResourceBundle.getBundle("com/mitel/miutil/DjvLanguage").getString(lang.getLocaleCode()));
+				fullString.append("-").append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage").getString(lang.getLocaleCode()));
 			}
 
 			return fullString.append(" [").append(lang.getLanguageLocaleRFC3066()).append("]").toString();
@@ -364,12 +364,12 @@ public class DjvLanguage
 			
 			// Retrieve the description ...
 			StringBuilder fullString = new StringBuilder(64)
-				.append(java.util.ResourceBundle.getBundle("com/mitel/miutil/DjvLanguage", localeSelection).getString(lang.getLanguageCode()));
+				.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage", localeSelection).getString(lang.getLanguageCode()));
 
 			String locale = lang.getLocaleCode();
 			if((null != locale)&&(locale.length() > 0))
 			{
-				fullString.append("-").append(java.util.ResourceBundle.getBundle("com/mitel/miutil/DjvLanguage", localeSelection).getString(lang.getLocaleCode()));
+				fullString.append("-").append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage", localeSelection).getString(lang.getLocaleCode()));
 			}
 
 			// ... and then the codes.

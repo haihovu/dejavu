@@ -58,163 +58,6 @@ public abstract class DjvSystem
 	}
 
 	/**
-	 * Writes a specific artifact from the class loader (JAR) to a directory on the host as a file.
-	 * @param classLoader The class loader with which to retrieve the artifact.
-	 * @param artifactName The fully qualified artifact name
-	 * @param deleteOnExit Whether the artifact is to be deleted on exit of the application
-	 * @param outDir The output directory into which to save the desired artifact.
-	 * @param type Whether the artifact being written is binary or text (ASCII).
-	 * @return The resulting artifact file.
-	 * @throws IOException
-	 */
-	private static File createArtifactFile(ClassLoader classLoader, String artifactName, File outDir, boolean deleteOnExit, ArtifactDesc.Type type) throws IOException
-	{
-		File outFile = new File(outDir.toString() + File.separator + artifactName);
-		createDir(outFile.getParentFile(), deleteOnExit);
-
-		InputStream inStream = classLoader.getResourceAsStream(artifactName);
-		if(inStream == null)
-		{
-			throw new IOException(artifactName + " does not exist");
-		}
-		
-		try
-		{
-			OutputStream outStream = new FileOutputStream(outFile);
-			try
-			{
-				outFile.deleteOnExit();
-				if(type == ArtifactDesc.Type.BINARY)
-				{
-					byte[] buf = new byte[1024];
-					int bytes = inStream.read(buf);
-					while(bytes > 0)
-					{
-						outStream.write(buf, 0, bytes);
-						bytes = inStream.read(buf);
-					}
-				}
-				else
-				{
-					Writer w = new OutputStreamWriter(outStream);
-					try
-					{
-						char[] cbuf = new char[1024];
-						Reader r = new InputStreamReader(inStream);
-						try
-						{
-							int bytes = r.read(cbuf);
-							while(bytes > 0)
-							{
-								w.write(cbuf, 0, bytes);
-								bytes = r.read(cbuf);
-							}
-						}
-						finally
-						{
-							r.close();
-						}
-					}
-					finally
-					{
-						w.close();
-					}
-				}
-			}
-			finally
-			{
-				outStream.close();
-			}
-		}
-		finally
-		{
-			inStream.close();
-		}
-		return outFile;
-	}
-
-	/**
-	 * A structure that describes a single artifact such as help content, basically any file included
-	 * in the JARs such as HTML, image, CSS, etc.
-	 */
-	public static class ArtifactDesc
-	{
-		public static enum Type
-		{
-			BINARY,
-			TEXT
-		}
-		
-		/**
-		 * The class loader with which to retrieve the artifact.
-		 */
-		public final ClassLoader classLoader;
-		/**
-		 * The fully qualified artifact name
-		 */
-		public final String artifactName;
-		/**
-		 * Is the artifact binary or text
-		 */
-		public final Type artifactType;
-		/**
-		 * Is this the entry point artifact, the initial HTML file so to speak.
-		 */
-		public final boolean isEntryPoint;
-		/**
-		 * Creates a new help artifact descriptor
-		 * @param cLoader The class loader with which to retrieve the artifact.
-		 * @param aName The fully qualified artifact name
-		 * @param type Is the artifact binary or text
-		 * @param entryPoint Is this the entry point artifact, the initial HTML file so to speak.
-		 */
-		public ArtifactDesc(ClassLoader cLoader, String aName, Type type, boolean entryPoint)
-		{
-			classLoader = cLoader;
-			artifactName = aName;
-			artifactType = type;
-			isEntryPoint = entryPoint;
-		}
-	}
-
-	/**
-	 * Retrieves the list of artifacts required to support MiDAS CSS.
-	 * @return The list of MiDAS CSS, non-null.
-	 */
-	@SuppressWarnings("ReturnOfCollectionOrArrayField")
-	public static ArtifactDesc[] getMidasCssArtifacts()
-	{
-		return gMidasCssArtifacts;
-	}
-
-	/**
-	 * Creates the artifacts of a set of help content (typically web pages and associated things
-	 * like images and CSS files) on the local drive to allow web browsers to access them.
-	 * This means retrieving the artifacts from the JAR file(s) and saving them on to a particular
-	 * directory on the local drive.
-	 * @param localDir The local directory in which to save the help content artifacts
-	 * @param artifacts The description of the artifacts to be created
-	 * @param deleteOnExit Whether the artifacts will be automatically deleted when the application exits.
-	 * @return The entry file into the help content, typically an HTML file.
-	 * @throws IOException
-	 */
-	public static File createHelpContentArtifact(File localDir, ArtifactDesc[] artifacts, boolean deleteOnExit) throws IOException
-	{
-		File ret = null;
-
-		for(ArtifactDesc artifact : artifacts)
-		{
-			File f = createArtifactFile(artifact.classLoader, artifact.artifactName, localDir, deleteOnExit, artifact.artifactType);
-			if(artifact.isEntryPoint)
-			{
-				ret = f;
-			}
-		}
-
-		return ret;
-	}
-	
-	/**
 	 * Sets the system log level, the higher the level, the more verbose the log output will be.
 	 * @param logLevel The log level as described below:
 	 * <ul>
@@ -717,8 +560,6 @@ public abstract class DjvSystem
 	 */
 	private static final Object s_LogLock = new Object();
 
-	private static final ArtifactDesc[] gMidasCssArtifacts;
-
 	private static boolean s_DiagnosticEnabled;
 
 	public static void enableDiagnostic()
@@ -741,17 +582,5 @@ public abstract class DjvSystem
 	static
 	{
 		ClassLoader classLoader = DjvSystem.class.getClassLoader();
-		gMidasCssArtifacts = new ArtifactDesc[]
-		{
-			new DjvSystem.ArtifactDesc(classLoader, "midasstyle.css", DjvSystem.ArtifactDesc.Type.TEXT, false),
-			new DjvSystem.ArtifactDesc(classLoader, "midasstyle_iehacks.css", DjvSystem.ArtifactDesc.Type.TEXT, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_mitel.gif", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_mitel_lite.gif", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_mitel_dark.gif", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_mitel_code.gif", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_app_select.png", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/bg_menu.jpg", DjvSystem.ArtifactDesc.Type.BINARY, false),
-			new DjvSystem.ArtifactDesc(classLoader, "images/gradient_grey.png", DjvSystem.ArtifactDesc.Type.BINARY, false),
-		};
 	}
 }
