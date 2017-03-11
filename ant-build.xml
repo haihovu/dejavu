@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE project>
+<project name="dejavu" default="dist" basedir=".">
+	<property name="src" value="src"/>
+	<property name="build" value="ant-build"/>
+	<property name="dist" value="ant-dist"/>
+	<property name="3rdparty.jars" value="artifacts/jars"/>
+	<property name="common-codec-dir" value="artifacts/libs/commons-codec-1.6/"/>
+	<property name="j2ssh-dir" value="artifacts/libs/j2ssh//"/>
+	<target name="all" depends="dist"></target>
+	<target name="clean">
+	  <tstamp>
+		  <format property="touch.time" pattern="MM/dd/yyyy hh:mm aa" offset="0" unit="hour"/>
+	  </tstamp>
+	  <echo>Building Dejavu - ${touch.time}</echo>
+	  <delete dir="${build}"/>
+	  <delete dir="${dist}"/>
+	</target>
+
+	<target name="init">
+		<mkdir dir="${build}"/>
+		<mkdir dir="${dist}"/>
+		<mkdir dir="${build}/classes"/>
+		<path id="compile.classpath">
+			<fileset dir="${3rdparty.jars}">
+				<include name="*.jar"/>
+			</fileset>
+			<fileset dir="${common-codec-dir}">
+				<include name="*.jar"/>
+			</fileset>
+			<fileset dir="${j2ssh-dir}">
+				<include name="*.jar"/>
+			</fileset>
+		</path>
+	</target>
+
+	<target name="compile" depends="init"> 
+	  <copy todir="${build}/classes">
+		<fileset dir="${src}">
+		  <exclude name="**/*.java"/>
+		  <exclude name="**/*.form"/>
+		  <exclude name="**/*.cpp"/>
+		  <exclude name="**/*.h"/>
+		</fileset>
+	  </copy>
+	  <javac srcdir="${src}" destdir="${build}/classes" debug="on">
+		  <classpath refid="compile.classpath"/>
+	  </javac>
+	</target>
+
+	<target name="dist" depends="compile">
+	  <mkdir dir="${dist}"/>
+	  <jar jarfile="${dist}/dejavu.jar" basedir="${build}/classes"/>
+	</target>
+
+
+</project>

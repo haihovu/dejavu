@@ -6,7 +6,6 @@
             <name>dejavu</name>
             <minimum-ant-version>1.6.5</minimum-ant-version>
             <source-roots>
-                <root id="src.silk_icons.dir"/>
                 <root id="midas.dir"/>
             </source-roots>
             <test-roots>

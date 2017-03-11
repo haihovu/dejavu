@@ -1,5 +1,5 @@
-antbuild/
-antdist/
+ant-build/
+ant-dist/
 dist/
 build/
 private/
