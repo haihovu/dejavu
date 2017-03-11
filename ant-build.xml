@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE project>
+<?xml version="1.0" encoding="UTF-8"?>
 <project name="dejavu" default="dist" basedir=".">
 	<property name="src" value="src"/>
 	<property name="build" value="ant-build"/>
@@ -8,7 +7,7 @@
 	<property name="common-codec-dir" value="artifacts/libs/commons-codec-1.6/"/>
 	<property name="j2ssh-dir" value="artifacts/libs/j2ssh//"/>
 	<target name="all" depends="dist"></target>
-	<target name="clean">
+	<target name="clean" depends="clean-silk-icons">
 	  <tstamp>
 		  <format property="touch.time" pattern="MM/dd/yyyy hh:mm aa" offset="0" unit="hour"/>
 	  </tstamp>
@@ -33,7 +32,12 @@
 			</fileset>
 		</path>
 	</target>
-
+	<target name="build-silk-icons">
+		<jar basedir="artifacts/silk_icons" includes="**/*.png" jarfile="${dist}/silk_icons.jar"></jar>
+	</target>
+	<target name="clean-silk-icons">
+		<delete file="${dist}/silk_icons.jar"/>
+	</target>
 	<target name="compile" depends="init"> 
 	  <copy todir="${build}/classes">
 		<fileset dir="${src}">
@@ -48,7 +52,7 @@
 	  </javac>
 	</target>
 
-	<target name="dist" depends="compile">
+	<target name="dist" depends="compile,build-silk-icons">
 	  <mkdir dir="${dist}"/>
 	  <jar jarfile="${dist}/dejavu.jar" basedir="${build}/classes"/>
 	</target>

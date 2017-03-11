@@ -99,8 +99,8 @@ public final class LogTreeUpdater implements Runnable
 							Object obj = ((DefaultMutableTreeNode)bottom).getUserObject();
 							if(obj instanceof DjvLogMsg) {
 								DjvLogMsg bottomMsg = (DjvLogMsg)obj;
-								bottomLogIndex = bottomMsg.m_Index;
-								if(msg.m_Index > bottomMsg.m_Index) {
+								bottomLogIndex = bottomMsg.index;
+								if(msg.index > bottomMsg.index) {
 									// New msg is bigger than bottom, insert at bottom
 									mode = InsertionMode.BOTTOM;
 									treeIndex = m_TreeRoot.getChildCount();
@@ -118,10 +118,10 @@ public final class LogTreeUpdater implements Runnable
 						if(top instanceof DefaultMutableTreeNode) {
 							Object obj = ((DefaultMutableTreeNode)top).getUserObject();
 							if(obj instanceof DjvLogMsg) {
-								if(msg.m_Index < ((DjvLogMsg)obj).m_Index) {
+								if(msg.index < ((DjvLogMsg)obj).index) {
 									// New msg is smaller than top, insert at top
 									mode = InsertionMode.TOP;
-									topLogIndex = ((DjvLogMsg)obj).m_Index;
+									topLogIndex = ((DjvLogMsg)obj).index;
 									break;
 								}
 							} else {
@@ -141,17 +141,17 @@ public final class LogTreeUpdater implements Runnable
 			}
 			switch(mode) {
 				case BOTTOM:
-					if(msg.m_Index > bottomLogIndex) {
+					if(msg.index > bottomLogIndex) {
 						m_TreeRoot.add(new DefaultMutableTreeNode(msg));
 						insertionIndices.add(treeIndex++);
-						bottomLogIndex = msg.m_Index;
+						bottomLogIndex = msg.index;
 					} else {
 						System.err.println("Discarding " + msg + " not fitting into bottom");
 					}
 					break;
 					
 				case TOP:
-					if(msg.m_Index < topLogIndex) {
+					if(msg.index < topLogIndex) {
 						m_TreeRoot.insert(new DefaultMutableTreeNode(msg), treeIndex);
 						insertionIndices.add(treeIndex++);
 					} else {

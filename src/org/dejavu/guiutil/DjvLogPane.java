@@ -25,7 +25,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
@@ -110,62 +109,59 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		super.setViewportView(m_LogTree);
 		addMouseListener(new PopupListener());
 		m_LogTree.setToolTipText(java.util.ResourceBundle.getBundle("org/dejavu/guiutil/GeneralGui").getString("guiutil.LogClickHint"));
-		getViewport().addChangeListener(new ChangeListener() {
-			@Override
-			public void stateChanged(ChangeEvent ce) {
-				Rectangle viewRect = m_LogTree.getVisibleRect();
-				int rowCount = m_LogTree.getRowCount();
-				LogPaneListener callback = getListener();
-				// Note that the top row is the root and not a message
-				if(rowCount > 1) {
-					boolean bottomRowVisible = (viewRect.intersects(m_LogTree.getRowBounds(rowCount - 1)));
-					boolean topRowVisible = (viewRect.intersects(m_LogTree.getRowBounds(1)));
-					if(topRowVisible) {
-						if(callback  != null) {
-							if(!atTop) {
-								atTop = true;
-								Object top = m_LogTree.getPathForRow(1).getLastPathComponent();
-								long index = -1;
-								if(top instanceof DefaultMutableTreeNode) {
-									Object userObj = ((DefaultMutableTreeNode)top).getUserObject();
-									if(userObj instanceof DjvLogMsg) {
-										index = ((DjvLogMsg)userObj).m_Index;
-									}
+		getViewport().addChangeListener((ChangeEvent event) -> {
+			Rectangle viewRect = m_LogTree.getVisibleRect();
+			int rowCount = m_LogTree.getRowCount();
+			LogPaneListener callback = getListener();
+			// Note that the top row is the root and not a message
+			if(rowCount > 1) {
+				boolean bottomRowVisible = (viewRect.intersects(m_LogTree.getRowBounds(rowCount - 1)));
+				boolean topRowVisible = (viewRect.intersects(m_LogTree.getRowBounds(1)));
+				if(topRowVisible) {
+					if(callback  != null) {
+						if(!atTop) {
+							atTop = true;
+							Object top = m_LogTree.getPathForRow(1).getLastPathComponent();
+							long index = -1;
+							if(top instanceof DefaultMutableTreeNode) {
+								Object userObj = ((DefaultMutableTreeNode)top).getUserObject();
+								if(userObj instanceof DjvLogMsg) {
+									index = ((DjvLogMsg)userObj).index;
 								}
-								callback.scrolledToTop(index);
+							}
+							callback.scrolledToTop(index);
+						}
+					}
+				} else if(bottomRowVisible) {
+					if(callback  != null) {
+						if(!atBottom) {
+							atBottom = true;
+							long index = -1;
+							Object bottom = m_LogTree.getPathForRow(rowCount - 1).getLastPathComponent();
+							if(bottom instanceof DefaultMutableTreeNode) {
+								Object userObj = ((DefaultMutableTreeNode)bottom).getUserObject();
+								if(userObj instanceof DjvLogMsg) {
+									index = ((DjvLogMsg)userObj).index;
+								}
+							}
+							callback.scrolledToBottom(index);
+						}
+					}
+				} else {
+					if(callback  != null) {
+						if(atTop) {
+							if((rowCount > 0)&&(!viewRect.intersects(m_LogTree.getRowBounds(1)))) {
+								atTop = false;
+								callback.scrolledOffTop();
 							}
 						}
-					} else if(bottomRowVisible) {
-						if(callback  != null) {
-							if(!atBottom) {
-								atBottom = true;
-								long index = -1;
-								Object bottom = m_LogTree.getPathForRow(rowCount - 1).getLastPathComponent();
-								if(bottom instanceof DefaultMutableTreeNode) {
-									Object userObj = ((DefaultMutableTreeNode)bottom).getUserObject();
-									if(userObj instanceof DjvLogMsg) {
-										index = ((DjvLogMsg)userObj).m_Index;
-									}
-								}
-								callback.scrolledToBottom(index);
-							}
-						}
-					} else {
-						if(callback  != null) {
-							if(atTop) {
-								if((rowCount > 0)&&(!viewRect.intersects(m_LogTree.getRowBounds(1)))) {
-									atTop = false;
-									callback.scrolledOffTop();
-								}
-							}
-							if(atBottom) {
-								// For scroll hysteresis, since new logs are added to the bottom,
-								// and that autoscrolling might readjust the bottom.
-								boolean secondToLastRowVisible = (rowCount > 1)&&(viewRect.intersects(m_LogTree.getRowBounds(rowCount - 2)));
-								if(!secondToLastRowVisible) {
-									atBottom = false;
-									callback.scrolledOffBottom();
-								}
+						if(atBottom) {
+							// For scroll hysteresis, since new logs are added to the bottom,
+							// and that autoscrolling might readjust the bottom.
+							boolean secondToLastRowVisible = (rowCount > 1)&&(viewRect.intersects(m_LogTree.getRowBounds(rowCount - 2)));
+							if(!secondToLastRowVisible) {
+								atBottom = false;
+								callback.scrolledOffBottom();
 							}
 						}
 					}
@@ -217,7 +213,7 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 	 */
 	public DjvLogMsg addMessage(DjvLogMsg msg){
 		synchronized(this){
-			if(msg.m_Severity > getSeverityLevel()) {
+			if(msg.severity > getSeverityLevel()) {
 				return null;
 			}
 			
@@ -225,10 +221,10 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 			if(m_LogBufferCache.isEmpty()) {
 				m_LogBufferCache.add(msg);
 			} else {
-				if(m_LogBufferCache.getFirst().m_Index > msg.m_Index) {
+				if(m_LogBufferCache.getFirst().index > msg.index) {
 					m_LogBufferCache.addFirst(msg);
 					addedAtBottom = false;
-				} else if(m_LogBufferCache.getLast().m_Index < msg.m_Index) {
+				} else if(m_LogBufferCache.getLast().index < msg.index) {
 					m_LogBufferCache.add(msg);
 				} else {
 					System.err.println("Discarding out of sequence message " + msg);
@@ -268,10 +264,10 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		long idx = -1;
 		for(DjvLogMsg msg : msgs) {
 			if(idx < 0) {
-				idx = msg.m_Index;
+				idx = msg.index;
 			} else {
-				if(msg.m_Index > idx) {
-					idx = msg.m_Index;
+				if(msg.index > idx) {
+					idx = msg.index;
 				} else {
 					System.err.println("Detected out-of-sequence messages, reject request");
 					return;
@@ -283,19 +279,19 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		synchronized(this){
 			int addMode = -1;
 			int filterLevel = getSeverityLevel();
-			long topIdx = m_LogBufferCache.isEmpty() ? -1 : m_LogBufferCache.getFirst().m_Index;
-			long bottomIdx = m_LogBufferCache.isEmpty() ? -1 : m_LogBufferCache.getLast().m_Index;
+			long topIdx = m_LogBufferCache.isEmpty() ? -1 : m_LogBufferCache.getFirst().index;
+			long bottomIdx = m_LogBufferCache.isEmpty() ? -1 : m_LogBufferCache.getLast().index;
 			int count = 0; // Used for top insert
 			for(DjvLogMsg msg : msgs) {
-				if(msg.m_Severity > filterLevel) {
+				if(msg.severity > filterLevel) {
 					continue;
 				}
 				if(m_LogBufferCache.isEmpty()) {
 					// Empty cache, equivalent to add at bottom
 					addMode = 0;
 					m_LogBufferCache.add(msg);
-					bottomIdx = msg.m_Index;
-				} else if(msg.m_Index < topIdx) {
+					bottomIdx = msg.index;
+				} else if(msg.index < topIdx) {
 					// Insert at top
 					if(addMode < 0) {
 						addMode = 1;
@@ -304,7 +300,7 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 						return;
 					}
 					m_LogBufferCache.add(count++, msg);
-				} else if(msg.m_Index > bottomIdx) {
+				} else if(msg.index > bottomIdx) {
 					// Add to bottom
 					if(addMode < 0) {
 						addMode = 0;
@@ -312,14 +308,14 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 						System.err.println("Encountered out-of-order messages, received bottom msg while in top add mode");
 						return;
 					}
-					if(msg.m_Index > m_LogBufferCache.getLast().m_Index) {
+					if(msg.index > m_LogBufferCache.getLast().index) {
 						m_LogBufferCache.add(msg);
 					} else {
 						System.err.println("Encountered out-of-order messages while adding to bottom, discard " + msg);
 						return;
 					}
 				} else {
-					System.err.println("Encountered out-of-order messages, discard " + msg.m_Index + " top = " + m_LogBufferCache.getFirst().m_Index + " bottom = " + m_LogBufferCache.getLast().m_Index);
+					System.err.println("Encountered out-of-order messages, discard " + msg.index + " top = " + m_LogBufferCache.getFirst().index + " bottom = " + m_LogBufferCache.getLast().index);
 					return;
 				}
 				
@@ -490,20 +486,10 @@ public class DjvLogPane extends JScrollPane implements ClipboardOwner
 		List<DjvLogMsg> logs = new LinkedList<>();
 		synchronized(DjvLogPane.this) {
 			int severity = getSeverityLevel();
-			for(DjvLogMsg msg : m_LogBufferCache){
+			m_LogBufferCache.stream().filter((msg) -> !((!m_MaintenanceLogFilter)&&(msg.getCategory() == DjvLogMsg.Category.MAINTENANCE))).filter((msg) -> !((!m_DesignLogFilter)&&(msg.getCategory() == DjvLogMsg.Category.DESIGN))).filter((msg) -> !(msg.severity > severity)).forEachOrdered((msg) -> {
 				// ... don't forget to apply any filter
-				if((!m_MaintenanceLogFilter)&&(msg.getCategory() == DjvLogMsg.Category.MAINTENANCE)){
-					continue;
-				}
-				if((!m_DesignLogFilter)&&(msg.getCategory() == DjvLogMsg.Category.DESIGN)) {
-					continue;
-				}
-				if(msg.m_Severity > severity){
-					continue;
-				}
-
 				logs.add(msg);
-			}
+			});
 		}
 		m_LogTree.addMessages(logs, autoScroll);
 	}

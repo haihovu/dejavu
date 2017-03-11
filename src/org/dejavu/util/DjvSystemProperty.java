@@ -3,7 +3,7 @@
 package org.dejavu.util;
 
 /**
- * Serves as the top namespace for all MiSystem's property name definitions.
+ * Serves as the top namespace for all DjvSystem's property name definitions.
  * Components that wishes to specify system properties should derive from this and define their property names therein.
  * This provides a framework from which developers can track down all properties in the system (by navigating the inheritance tree from this base class).
  * @stereotype utility 

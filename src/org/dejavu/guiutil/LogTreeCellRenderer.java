@@ -42,7 +42,7 @@ public class LogTreeCellRenderer extends DefaultTreeCellRenderer
 			if(logNode.getUserObject() instanceof DjvLogMsg)
 			{
 				DjvLogMsg msg = (DjvLogMsg)logNode.getUserObject();
-				switch(msg.m_Severity)
+				switch(msg.severity)
 				{
 					case 0:
 						if(!sel)
@@ -61,7 +61,7 @@ public class LogTreeCellRenderer extends DefaultTreeCellRenderer
 						opacity = !sel;
 						break;
 				}
-				setText(msg.m_Index + " : " + msg.tsToString() + " " + msg.toString());
+				setText(msg.index + " : " + msg.tsToString() + " " + msg.toString());
 			}
 		}
 

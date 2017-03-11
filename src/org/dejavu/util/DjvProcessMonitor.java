@@ -8,23 +8,26 @@ import java.io.*;
 
 /**
  * Task for monitoring the status of a child process
+ *
  * @author haiv
  */
-public class DjvProcessMonitor extends DjvBackgroundTask
-{
+public class DjvProcessMonitor extends DjvBackgroundTask {
+
 	/**
-	 * Monitor task for an input stream to this program, i.e. output stream from the child process
+	 * Monitor task for an input stream to this program, i.e. output stream from
+	 * the child process
+	 *
 	 * @author haiv
 	 */
-	private static class TaskInputStreamMonitor implements Runnable
-	{
+	private static class TaskInputStreamMonitor implements Runnable {
+
 		/**
 		 * The input stream from which to monitor output from the child process
 		 */
 		private final InputStream istream;
 		/**
-		 * Name of the owner of the input stream, i.e. the name of the child process.
-		 * Used for diagnostic purposes
+		 * Name of the owner of the input stream, i.e. the name of the child
+		 * process. Used for diagnostic purposes
 		 */
 		private final String owner;
 		/**
@@ -39,26 +42,26 @@ public class DjvProcessMonitor extends DjvBackgroundTask
 		 * Save the output to a string
 		 */
 		private final StringBuilder mOutput = new StringBuilder(10240);
+
 		/**
 		 * Creates a new monitor task
-		 * @param streamOwner The name of the owner process of the input stream 
+		 *
+		 * @param streamOwner The name of the owner process of the input stream
 		 * @param stream The input stream to be monitored
 		 */
-		private TaskInputStreamMonitor(String streamOwner, InputStream stream)
-		{
+		private TaskInputStreamMonitor(String streamOwner, InputStream stream) {
 			owner = streamOwner;
 			istream = stream;
 			worker = new Thread(this);
 		}
-		
+
 		/**
 		 * Starts the monitor task
+		 *
 		 * @return This object
 		 */
-		private DjvProcessMonitor.TaskInputStreamMonitor start()
-		{
-			synchronized(this)
-			{
+		private DjvProcessMonitor.TaskInputStreamMonitor start() {
+			synchronized (this) {
 				running = true;
 			}
 			worker.start();
@@ -68,61 +71,52 @@ public class DjvProcessMonitor extends DjvBackgroundTask
 		/**
 		 * Stops the monitor task
 		 */
-		private void stop()
-		{
-			synchronized(this)
-			{
+		private void stop() {
+			synchronized (this) {
 				running = false;
 			}
-			try
-			{
+			try {
 				istream.close();
-			}
-			catch(IOException ex)
-			{
+			} catch (IOException ex) {
+				DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 			}
 			worker.interrupt();
 		}
-		
+
 		/**
 		 * Determines whether the task is running
+		 *
 		 * @return True if the task is running, false otherwise.
 		 */
-		private boolean isRunning()
-		{
-			synchronized(this)
-			{
+		private boolean isRunning() {
+			synchronized (this) {
 				return running;
 			}
 		}
-		
+
 		/**
 		 * Return the captured output from executing a command.
-		 * 
+		 *
 		 * @return a string representing the output of a command.
 		 */
-		public String getOutput()
-		{
+		public String getOutput() {
 			return mOutput.toString();
 		}
-		
+
 		/**
 		 * Waits for the stream monitor to complete
+		 *
 		 * @param timeoutMs Optional timeout to wait, zero or less means no wait
 		 * @return True if the stream monitor has completed, false otherwise.
 		 * @throws InterruptedException
 		 */
 		@SuppressWarnings("WaitWhileNotSynced")
-		public boolean waitForCompletion(long timeoutMs) throws InterruptedException
-		{
-			if(timeoutMs > 0)
-			{
+		public boolean waitForCompletion(long timeoutMs) throws InterruptedException {
+			if (timeoutMs > 0) {
 				long ts = System.currentTimeMillis();
 				long remain = timeoutMs;
-				synchronized(this)
-				{
-					while(isRunning() && remain > 0)
-					{
+				synchronized (this) {
+					while (isRunning() && remain > 0) {
 						this.wait(remain);
 						remain = timeoutMs - (System.currentTimeMillis() - ts);
 					}
@@ -130,46 +124,39 @@ public class DjvProcessMonitor extends DjvBackgroundTask
 			}
 			return !isRunning();
 		}
-		
+
 		@Override
 		@SuppressWarnings({"NestedAssignment", "SleepWhileInLoop"})
-		public void run()
-		{
+		public void run() {
 			byte[] buf = new byte[2048];
-			try
-			{
+			try {
 				int bytesBuffered = 0;
 				StringBuilder bufferedString = null;
 				boolean eof = false;
-				while(isRunning() && (!eof))
-				{
+				while (isRunning() && (!eof)) {
 					int avail = istream.available();
 					// Read when: there are data to be read OR when there is nothing to parse
-					if((avail > 0)||(bytesBuffered == 0)) {
+					if ((avail > 0) || (bytesBuffered == 0)) {
 						int bytes = istream.read(buf);
-						if(bytes > 0)
-						{
+						if (bytes > 0) {
 							bytesBuffered += bytes;
-							if(bufferedString == null) {
+							if (bufferedString == null) {
 								bufferedString = new StringBuilder(4096);
 							}
 							String newStr = new String(buf, 0, bytes);
 							bufferedString.append(newStr);
 							mOutput.append(newStr);
 							continue;
-						}
-						else
-						{
+						} else {
 							System.out.println("DEBUG - " + owner + " EOF");
 							eof = true;
 						}
 					}
-					if((bytesBuffered > 0)&&(bufferedString != null)) {
+					if ((bytesBuffered > 0) && (bufferedString != null)) {
 						// Read in the data as text, one line at a time
 						BufferedReader r = new BufferedReader(new StringReader(bufferedString.toString()));
 						String line;
-						while((line = r.readLine()) != null)
-						{
+						while ((line = r.readLine()) != null) {
 							System.out.println(owner + " - " + line);
 						}
 						System.out.flush();
@@ -177,62 +164,50 @@ public class DjvProcessMonitor extends DjvBackgroundTask
 						bufferedString = null;
 					}
 				}
-			}
-			catch (IOException | RuntimeException e)
-			{
-			}
-			finally
-			{
-				try
-				{
+			} catch (IOException | RuntimeException e) {
+			} finally {
+				try {
 					istream.close();
+				} catch (IOException e) {
 				}
-				catch(IOException e)
-				{
-				}
-				
-				synchronized(this)
-				{
+
+				synchronized (this) {
 					running = false;
 					this.notifyAll();
 				}
 			}
 		}
 	}
-	
+
 	private final Process child;
 	private final DjvProcessMonitor.TaskInputStreamMonitor stdoutMon;
 	private final DjvProcessMonitor.TaskInputStreamMonitor stderrMon;
-	
+
 	private volatile int exitVal = -1;
-	
+
 	/**
 	 * Creates a new task for monitoring a process
+	 *
 	 * @param childProc The process to be monitored
 	 * @param name Name of the process (for diagnostic purposes)
-	 * @param monitorStderr Flag indicating whether to monitor the stderr of the child process
+	 * @param monitorStderr Flag indicating whether to monitor the stderr of the
+	 * child process
 	 */
-	public DjvProcessMonitor(String name, Process childProc, boolean monitorStderr)
-	{
+	public DjvProcessMonitor(String name, Process childProc, boolean monitorStderr) {
 		super("Monitor-" + name);
 		child = childProc;
-		if(monitorStderr)
-		{
+		if (monitorStderr) {
 			stderrMon = new TaskInputStreamMonitor(name + ".stderr", childProc.getErrorStream());
-		}
-		else
-		{
+		} else {
 			stderrMon = null;
 		}
 		stdoutMon = new TaskInputStreamMonitor(name + ".stdout", childProc.getInputStream());
 	}
 
 	@Override
-	public DjvBackgroundTask start()
-	{
+	public DjvBackgroundTask start() {
 		super.start();
-		if(stderrMon != null)
-		{
+		if (stderrMon != null) {
 			stderrMon.start();
 		}
 		stdoutMon.start();
@@ -240,132 +215,115 @@ public class DjvProcessMonitor extends DjvBackgroundTask
 	}
 
 	/**
-	 * Waits for the monitored process to terminate 
-	 * @param timeoutMs Optional timeout to wait for the process to complete, zero or less means no wait.
-	 * @return The exit value of the monitored process,
-	 * -1 if the process is still running.
-	 * @throws InterruptedException 
+	 * Waits for the monitored process to terminate
+	 *
+	 * @param timeoutMs Optional timeout to wait for the process to complete,
+	 * zero or less means no wait.
+	 * @return The exit value of the monitored process, -1 if the process is
+	 * still running.
+	 * @throws InterruptedException
 	 */
-	public int waitForCompletion(long timeoutMs) throws InterruptedException
-	{
-		if(DjvSystem.diagnosticEnabled())
-		{
+	public int waitForCompletion(long timeoutMs) throws InterruptedException {
+		if (DjvSystem.diagnosticEnabled()) {
 			DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, Thread.currentThread() + " wait for completion " + timeoutMs + "ms");
 		}
 		long ts = System.currentTimeMillis();
 		long remainMs = timeoutMs;
-		synchronized(this)
-		{
-			while(getRunFlag() && (remainMs > 0))
-			{
+		synchronized (this) {
+			while (getRunFlag() && (remainMs > 0)) {
 				this.wait(5000);
 				remainMs = timeoutMs - (System.currentTimeMillis() - ts);
 			}
 		}
-		if(DjvSystem.diagnosticEnabled())
-		{
+		if (DjvSystem.diagnosticEnabled()) {
 			DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, Thread.currentThread() + " done wait for completion " + timeoutMs + "ms");
 		}
 		return exitVal;
 	}
 
 	/**
-	 * Retrieves the output stream of this program that represents the stdin of the monitored process
+	 * Retrieves the output stream of this program that represents the stdin of
+	 * the monitored process
+	 *
 	 * @return The output stream representing the stdin of the monitored process
 	 */
-	public OutputStream getStdIn()
-	{
+	public OutputStream getStdIn() {
 		return child.getOutputStream();
 	}
 
 	/**
-	 * Retrieves the input stream of this program that represents the stdout of the monitored process
+	 * Retrieves the input stream of this program that represents the stdout of
+	 * the monitored process
+	 *
 	 * @return The input stream representing the stdout of the monitored process
 	 */
-	public InputStream getStdOut()
-	{
+	public InputStream getStdOut() {
 		return child.getInputStream();
 	}
 
 	/**
-	 * Retrieves the input stream of this program that represents the stderr of the monitored process
+	 * Retrieves the input stream of this program that represents the stderr of
+	 * the monitored process
+	 *
 	 * @return The input stream representing the stderr of the monitored process
 	 */
-	public InputStream getStdErr()
-	{
+	public InputStream getStdErr() {
 		return child.getErrorStream();
 	}
-	
+
 	/**
-	 * Return the error captured from running the command. 
-	 * 
-	 * @return a string representing the captured error output from running
-	 * the command. 
+	 * Return the error captured from running the command.
+	 *
+	 * @return a string representing the captured error output from running the
+	 * command.
 	 */
-	public String getStdErrStr()
-	{
+	public String getStdErrStr() {
 		return stderrMon.getOutput();
 	}
-	
+
 	/**
-	 * Return the output captured from running the command. 
-	 * 
-	 * @return a string representing the captured output from running
-	 * the command.
+	 * Return the output captured from running the command.
+	 *
+	 * @return a string representing the captured output from running the
+	 * command.
 	 */
-	public String getStdOutStr()
-	{
+	public String getStdOutStr() {
 		return stdoutMon.getOutput();
 	}
-	
+
 	@Override
-	public void run()
-	{
-		try
-		{
+	public void run() {
+		try {
 			/*
 			 * This task basically runs until the monitored process exits
 			 */
 			exitVal = child.waitFor();
-			if(exitVal != 0)
-			{
+			if (exitVal != 0) {
 				System.out.println(Thread.currentThread().getName() + " terminated Abnormally");
-			}
-			else
-			{
+			} else {
 				System.out.println(Thread.currentThread().getName() + " terminated Normally");
 			}
-			if(DjvSystem.diagnosticEnabled())
-			{
+			if (DjvSystem.diagnosticEnabled()) {
 				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, Thread.currentThread().getName() + " waiting for stderr/stdout monitors to terminate");
 			}
-			if(stderrMon != null)
-			{
+			if (stderrMon != null) {
 				stderrMon.waitForCompletion(500);
 			}
 			stdoutMon.waitForCompletion(500);
-			if(DjvSystem.diagnosticEnabled())
-			{
+			if (DjvSystem.diagnosticEnabled()) {
 				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, Thread.currentThread().getName() + " DONE waiting for stderr/stdout monitors to terminate");
 			}
-		}
-		catch (InterruptedException e)
-		{
+		} catch (InterruptedException e) {
 			System.out.println(Thread.currentThread().getName() + " stopped");
-		}
-		finally
-		{
-			if(stderrMon != null)
-			{
+		} finally {
+			if (stderrMon != null) {
 				stderrMon.stop();
 			}
 			stdoutMon.stop();
-			synchronized(this)
-			{
+			synchronized (this) {
 				setRunFlag(false);
 				this.notifyAll();
-				if(DjvSystem.diagnosticEnabled())
-				{
+				if (DjvSystem.diagnosticEnabled()) {
 					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, Thread.currentThread() + " terminates, notifies all");
 				}
 			}

@@ -47,9 +47,9 @@ public class DjvWatchDog extends TimerTask {
 	 * can manage.
 	 */
 	public DjvWatchDog(String name, int capacity) {
-		m_MonitorRepository = new MonitorInfo[capacity];
-		m_MaxIndex = 0;
-		m_WdName = name;
+		monitorRepository = new MonitorInfo[capacity];
+		maxIndex = 0;
+		wdName = name;
 	}
 
 	/**
@@ -59,10 +59,10 @@ public class DjvWatchDog extends TimerTask {
 	 * components, in milliseconds.
 	 */
 	public synchronized void start(int timeResolution) {
-		if ((timeResolution > 0) && (null == m_Timer)) {
-			m_TimeResolution = timeResolution;
-			m_Timer = new Timer(m_WdName);
-			m_Timer.scheduleAtFixedRate(this, 0, timeResolution);
+		if ((timeResolution > 0) && (null == timer)) {
+			this.timeResolution = timeResolution;
+			timer = new Timer(wdName);
+			timer.scheduleAtFixedRate(this, 0, timeResolution);
 		}
 	}
 
@@ -71,9 +71,9 @@ public class DjvWatchDog extends TimerTask {
 	 * watchdog cannot be restarted.
 	 */
 	public synchronized void stop() {
-		if (null != m_Timer) {
+		if (null != timer) {
 			cancel();
-			m_Timer.cancel();
+			timer.cancel();
 		}
 	}
 
@@ -86,8 +86,8 @@ public class DjvWatchDog extends TimerTask {
 	 * @return Whether the status reporting was successful.
 	 */
 	public boolean reportStatus(int key, Status status) {
-		if ((key > -1) && (key < m_MaxIndex)) {
-			MonitorInfo monitor = m_MonitorRepository[key];
+		if ((key > -1) && (key < maxIndex)) {
+			MonitorInfo monitor = getMonitorInfo(key);
 			if (null != monitor) {
 				if (DjvSystem.diagnosticEnabled()) {
 					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN,
@@ -96,8 +96,8 @@ public class DjvWatchDog extends TimerTask {
 
 				synchronized (monitor) {
 					if (status == Status.WD_NORMAL) {
-						monitor.m_Counter = monitor.m_Period;
-						monitor.m_OnProbation = false;
+						monitor.counter = monitor.period;
+						monitor.onProbation = false;
 					} else if (status == Status.WD_FAILED) {
 						executeResponse(monitor);
 					}
@@ -114,7 +114,11 @@ public class DjvWatchDog extends TimerTask {
 
 		return false;
 	}
-
+	private MonitorInfo getMonitorInfo(int key) {
+		synchronized(monitorRepository) {
+			return key < monitorRepository.length ? monitorRepository[key] : null;
+		}
+	}
 	/**
 	 * Registers a component with the watchdog for monitoring.
 	 *
@@ -126,23 +130,24 @@ public class DjvWatchDog extends TimerTask {
 	 * detected.
 	 * @return An integer key to allow the client to report its status later.
 	 */
-	public synchronized int registerComponent(String name, int wdPeriod, Runnable failureResponse) {
-		for (int i = 0; i < m_MaxIndex; ++i) {
-			if (m_MonitorRepository[i] == null) {
-				m_MonitorRepository[i] = new MonitorInfo(name, wdPeriod, failureResponse);
-				return i;
+	public int registerComponent(String name, int wdPeriod, Runnable failureResponse) {
+		synchronized(monitorRepository) {
+			for (int i = 0; i < maxIndex; ++i) {
+				if (monitorRepository[i] == null) {
+					monitorRepository[i] = new MonitorInfo(name, wdPeriod, failureResponse);
+					return i;
+				}
+			}
+
+			if (maxIndex < monitorRepository.length) {
+				int index = maxIndex++;
+				monitorRepository[index] = new MonitorInfo(name, wdPeriod, failureResponse);
+
+				return index;
 			}
 		}
-
-		if (m_MaxIndex < m_MonitorRepository.length) {
-			int index = m_MaxIndex++;
-			m_MonitorRepository[index] = new MonitorInfo(name, wdPeriod, failureResponse);
-
-			return index;
-		}
-
 		DjvSystem.logError(DjvLogMsg.Category.DESIGN,
-				"Monitor capacity (" + m_MonitorRepository.length + ") exceeded while registering " + name);
+				"Monitor capacity (" + monitorRepository.length + ") exceeded while registering " + name);
 
 		return -1;
 	}
@@ -152,13 +157,15 @@ public class DjvWatchDog extends TimerTask {
 	 *
 	 * @param key
 	 */
-	public synchronized void deregisterComponent(int key) {
-		if ((key > -1) && (key < m_MaxIndex)) {
-			if (m_MonitorRepository[key] != null) {
-				DjvSystem.logWarning(DjvLogMsg.Category.DESIGN,
-						"Deregistering " + m_MonitorRepository[key]);
+	public void deregisterComponent(int key) {
+		synchronized(monitorRepository) {
+			if ((key > -1) && (key < maxIndex)) {
+				if (monitorRepository[key] != null) {
+					DjvSystem.logWarning(DjvLogMsg.Category.DESIGN,
+							"Deregistering " + monitorRepository[key]);
 
-				m_MonitorRepository[key] = null;
+					monitorRepository[key] = null;
+				}
 			}
 		}
 	}
@@ -166,21 +173,21 @@ public class DjvWatchDog extends TimerTask {
 	@SuppressWarnings({"NestedAssignment", "NestedSynchronizedStatement"})
 	@Override
 	public void run() {
-		synchronized (this) {
-			for (int i = 0; i < m_MaxIndex; ++i) {
-				MonitorInfo monitor = m_MonitorRepository[i];
+		synchronized (monitorRepository) {
+			for (int i = 0; i < maxIndex; ++i) {
+				MonitorInfo monitor = monitorRepository[i];
 				if (null != monitor) {
 					synchronized (monitor) {
-						if ((monitor.m_Counter -= m_TimeResolution) > 0) {
+						if ((monitor.counter -= timeResolution) > 0) {
 							// This component is OK, go to the next
 							continue;
 						}
 
 						// Component missed report
-						if (!monitor.m_OnProbation) {
+						if (!monitor.onProbation) {
 							// Give the component one more chance to report its status
-							monitor.m_OnProbation = true;
-							monitor.m_Counter = monitor.m_Period;
+							monitor.onProbation = true;
+							monitor.counter = monitor.period;
 
 							if (DjvSystem.getLogLevel() > 1) {
 								DjvSystem.logInfo(DjvLogMsg.Category.DESIGN,
@@ -191,7 +198,7 @@ public class DjvWatchDog extends TimerTask {
 									"Failure detected in component " + monitor);
 
 							// Stop monitoring this particular component
-							m_MonitorRepository[i] = null;
+							monitorRepository[i] = null;
 							executeResponse(monitor);
 						}
 					}
@@ -202,60 +209,60 @@ public class DjvWatchDog extends TimerTask {
 
 	@Override
 	public String toString() {
-		return m_WdName;
+		return wdName;
 	}
 
+	/**
+	 * Executes the response logic for a monitor, using a background thread.
+	 * @param monitor The target monitor.
+	 */
 	private void executeResponse(MonitorInfo monitor) {
-		if (monitor.m_Response != null) {
-			new Thread(monitor.m_Response, "wd" + monitor.m_Name).start();
+		if (monitor.response != null) {
+			new Thread(monitor.response, "wd" + monitor.name).start();
 		}
 	}
 
 	private static class MonitorInfo {
 
-		final int m_Period;
-		final String m_Name;
-		final Runnable m_Response;
-		int m_Counter;
-		boolean m_OnProbation;
+		final int period;
+		final String name;
+		final Runnable response;
+		int counter;
+		boolean onProbation;
 
 		MonitorInfo(String name, int period, Runnable response) {
-			m_Name = name;
-			m_Period = period;
-			m_Response = response;
+			this.name = name;
+			this.period = period;
+			this.response = response;
 		}
 
 		@Override
 		public String toString() {
-			StringBuilder retValue = new StringBuilder(128).append("(Component");
-			retValue.append(" name=").append(m_Name);
-			retValue.append(" period=").append(m_Period);
-			retValue.append(" counter=").append(m_Counter);
-			retValue.append(" probation=").append(m_OnProbation);
-			return retValue.append(")").toString();
+			return "MonitorInfo{" + "period=" + period + ", name=" + name + ", response=" + response + ", counter=" + counter + ", onProbation=" + onProbation + '}';
 		}
+		
 	}
 
 	/**
 	 * The repository of registered components.
 	 */
-	private volatile MonitorInfo[] m_MonitorRepository;
+	private final MonitorInfo[] monitorRepository;
 	/**
 	 * The maximum index into the m_MonitorRepository array indicating the upper
 	 * limit of registered components.
 	 */
-	private volatile int m_MaxIndex;
+	private volatile int maxIndex;
 	/**
 	 * Timer used to drive the watchdog monitoring process.
 	 */
-	private Timer m_Timer;
+	private Timer timer;
 	/**
 	 * Name of the watchdog, note that there may be multiple instances of the
 	 * watchdogs running in an application.
 	 */
-	private final String m_WdName;
+	private final String wdName;
 	/**
 	 * Resolution of the watchdog timer, in milliseconds.
 	 */
-	private int m_TimeResolution;
+	private int timeResolution;
 }
