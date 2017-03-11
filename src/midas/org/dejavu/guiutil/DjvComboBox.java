@@ -75,6 +75,7 @@ public class DjvComboBox extends JComboBox
 			m_MyEditor.getTextField().requestFocus();
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void updateList()
 	{
 		if( !m_UpdatingMode )
@@ -110,6 +111,7 @@ public class DjvComboBox extends JComboBox
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void addItem(Object anObject)
 	{
 		removeItem(anObject);

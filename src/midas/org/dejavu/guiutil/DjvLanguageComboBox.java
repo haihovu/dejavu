@@ -26,6 +26,7 @@ public class DjvLanguageComboBox extends JComboBox
 	 */
 	private String[] m_SupportedLanguages;
 	
+	@SuppressWarnings("unchecked")
 	private void init()
 	{
 		// Initialize the supported languages array

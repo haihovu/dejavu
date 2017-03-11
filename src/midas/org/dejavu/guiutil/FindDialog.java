@@ -32,6 +32,7 @@ public class FindDialog extends JDialog
 	 * @param caseInsensitive
 	 * @param listener
 	 */
+	@SuppressWarnings("unchecked")
 	public FindDialog(Frame parent, List<String> predefinedPatterns, boolean caseInsensitive, ActionListener listener)
 	{
 		super(parent, true);
