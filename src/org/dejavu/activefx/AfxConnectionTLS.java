@@ -91,11 +91,11 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 		try
 		{
 			// This is the same as that of a normal (non secured) connection
-			if(m_Channel.isConnectionPending())
+			if(channel.isConnectionPending())
 			{
-				m_Channel.finishConnect();
+				channel.finishConnect();
 			}
-			else if(!m_Channel.isConnected())
+			else if(!channel.isConnected())
 			{
 				throw new ConnectException("not in connect pending state");
 			}
@@ -104,12 +104,12 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 		catch(ConnectException e)
 		{
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, this, e.getMessage()), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, this, e.getMessage()), true);
 		}
 		catch(java.io.IOException e)
 		{
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, this, e.getMessage()), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, this, e.getMessage()), true);
 		}
 	}
 
@@ -129,8 +129,8 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 	@Override
 	public void onConnect()
 	{
-		m_Domain.deregisterHandler(this, SelectionKey.OP_CONNECT);
-		m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.HANDSHAKE, this), true);
+		domain.deregisterHandler(this, SelectionKey.OP_CONNECT);
+		domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.HANDSHAKE, this), true);
 	}
 
 	@Override
@@ -140,10 +140,10 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 		{
 			try
 			{
-				if(null != m_Channel)
+				if(null != channel)
 				{
 					m_InNetBuffer.compact();
-					int bytesRead = m_Channel.read(m_InNetBuffer);
+					int bytesRead = channel.read(m_InNetBuffer);
 					if(0 > bytesRead)
 					{
 						m_InNetBuffer.flip();
@@ -201,7 +201,7 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 					AfxConnectionTLS.this.notifyAll();
 				}
 				else
-					m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
+					domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
 			}
 		}
 	}
@@ -228,14 +228,14 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 						else if(!m_WriteBuffer.hasRemaining())
 						{
 							// Wrote the entire buffer, generate write complete event ...
-							m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_COMPLETE, this), true);
+							domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_COMPLETE, this), true);
 						}
 					}
 				}
 				
 				if(m_OutNetBuffer.hasRemaining())
 				{
-					if(0 > m_Channel.write(m_OutNetBuffer))
+					if(0 > channel.write(m_OutNetBuffer))
 					{
 						throw new IOException("Write failed");
 					}
@@ -263,7 +263,7 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 					AfxConnectionTLS.this.notifyAll();
 				}
 				else
-					m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
+					domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
 			}
 		}
 	}
@@ -273,18 +273,18 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 		if(m_ReadindMode)
 		{
 			int inputRemaining = m_InAppBuffer.remaining();
-			int readRemaining = m_ReadBuffer.remaining();
+			int readRemaining = readBuffer.remaining();
 			if(0 < readRemaining)
 			{
 				int bytes = (inputRemaining > readRemaining)?readRemaining:inputRemaining;
 				if(0 < bytes)
 				{
-					m_ReadBuffer.put(m_InAppBuffer.array(), m_InAppBuffer.arrayOffset() + m_InAppBuffer.position(), bytes);
+					readBuffer.put(m_InAppBuffer.array(), m_InAppBuffer.arrayOffset() + m_InAppBuffer.position(), bytes);
 					m_InAppBuffer.position(m_InAppBuffer.position() + bytes);
-					if(!m_ReadBuffer.hasRemaining())
+					if(!readBuffer.hasRemaining())
 					{
 						m_ReadindMode = false;
-						m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
+						domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
 					}
 				}
 				else
@@ -296,7 +296,7 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 			else
 			{
 				m_ReadindMode = false;
-				m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
+				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
 			}
 		}
 	}
@@ -394,18 +394,18 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 							else if(isHandshakeAborted())
 								throw new SSLException("Handshake aborted");
 							else if(isHandshakeDone())
-								m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_COMPLETE, AfxConnectionTLS.this), true);
+								domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_COMPLETE, AfxConnectionTLS.this), true);
 						}
 						catch(SSLException e)
 						{
 							DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-							m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, AfxConnectionTLS.this,
+							domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, AfxConnectionTLS.this,
 								e.getMessage()), true);
 						}
 						catch(RuntimeException e)
 						{
 							DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-							m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, AfxConnectionTLS.this,
+							domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, AfxConnectionTLS.this,
 								e.getMessage()), true);
 						}
 						catch(InterruptedException ex)
@@ -492,26 +492,26 @@ public class AfxConnectionTLS extends AfxConnectionTcp
 						}
 
 						setHandShakingMode(false);
-						m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE_COMPLETE, AfxConnectionTLS.this), true);
+						domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE_COMPLETE, AfxConnectionTLS.this), true);
 						disableReactorRead();
 						disableReactorWrite();
 
-						if(null != m_Channel)
+						if(null != channel)
 						{
 							try
 							{
-								m_Channel.close();
+								channel.close();
 							}
 							catch(Exception e)
 							{
 								DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
 							}
-							m_Channel = null;
+							channel = null;
 						}
-						if(null != m_ConnectionventHandler)
-							m_ConnectionventHandler.closed();
+						if(null != connectionventHandler)
+							connectionventHandler.closed();
 
-						m_ConnectionventHandler = null;
+						connectionventHandler = null;
 					}
 				});
 				m_HandshakeThread.start();

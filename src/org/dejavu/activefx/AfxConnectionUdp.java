@@ -58,7 +58,7 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	{
 		try
 		{
-			m_Domain.deregisterHandler(this, SelectionKey.OP_WRITE);
+			domain.deregisterHandler(this, SelectionKey.OP_WRITE);
 			if(null != m_RemoteAddress)
 			{
 				int byteWritten;
@@ -70,7 +70,7 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	
 					// Wrote the entire buffer, don't need write event any more ...
 					// ... And trigger the transition on event WRITE_COMPLETE
-					m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_COMPLETE, this), true);
+					domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_COMPLETE, this), true);
 					return;
 				}
 				else {
@@ -82,33 +82,33 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 			}
 
 			// Write failed, don't need write event any more ...
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
 		}
 		catch(IOException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 			// Write failed, don't need write event any more ...
 			// ... And trigger the transition on event FAILURE
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
 		}
 	}
 
 	@Override
 	public void onAccept()
 	{
-		m_Domain.deregisterHandler(this, SelectionKey.OP_ACCEPT);
+		domain.deregisterHandler(this, SelectionKey.OP_ACCEPT);
 	}
 
 	@Override
 	public void onConnect()
 	{
 		// This is UDP no need for this: m_Domain.m_Reactor.deregisterHandler(this, SelectionKey.OP_CONNECT);
-		m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_COMPLETE, this), true);
+		domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_COMPLETE, this), true);
 	}
 
 	@Override
 	public void onDisconnect()
 	{
-		m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), false);
+		domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), false);
 	}
 
 	@Override
@@ -116,18 +116,18 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	{
 		try
 		{
-			if((m_ReadBuffer != null)&&(m_ReadBuffer.hasRemaining()))
+			if((readBuffer != null)&&(readBuffer.hasRemaining()))
 			{
-				SocketAddress sender = m_Channel.receive(m_ReadBuffer);
+				SocketAddress sender = m_Channel.receive(readBuffer);
 				if(sender != null)
 				{
 					m_ReadFailCount = 0;
 
 					// Datagram is a read once process
-					m_Domain.deregisterHandler(this, SelectionKey.OP_READ);
+					domain.deregisterHandler(this, SelectionKey.OP_READ);
 
 					// Trigger the transition on event READ_COMPLETE
-					m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
+					domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_COMPLETE, this), true);
 
 					return;
 				}
@@ -144,32 +144,32 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 				}
 
 				m_ReadFailCount = 0;
-				m_Domain.deregisterHandler(this, SelectionKey.OP_READ);
-				m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
+				domain.deregisterHandler(this, SelectionKey.OP_READ);
+				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
 			}
 			else
 			{
-				m_Domain.deregisterHandler(this, SelectionKey.OP_READ);
+				domain.deregisterHandler(this, SelectionKey.OP_READ);
 
 				// Not ready to accept more read event, stop the reading process ...
-				if(m_ReadBuffer == null) {
+				if(readBuffer == null) {
 					DjvSystem.logWarning(Category.DESIGN, "Read buffer is NULL");
 				}
 				else {
 					DjvSystem.logError(Category.DESIGN, "Data available for read but no room left in read buffer");
 				}
 
-				m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
+				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
 			}
 		}
 		catch(java.io.IOException e)
 		{
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
 
-			m_Domain.deregisterHandler(this, SelectionKey.OP_READ);
+			domain.deregisterHandler(this, SelectionKey.OP_READ);
 
 			// Read failed, stop the reading process ...
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
 		}
 	}
 
@@ -260,7 +260,7 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 		AfxFsmEvent afxEvent = (AfxFsmEvent)evt;
 		try
 		{
-			m_ConnectionventHandler = afxEvent.getEventHandler();
+			connectionventHandler = afxEvent.getEventHandler();
 
 			// Close any existing channel
 			if(m_Channel != null)
@@ -283,7 +283,7 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 		}
 		catch(IOException e)
 		{
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, 
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE, 
 				this, e.getMessage()), true);
 		}
 	}
@@ -303,10 +303,10 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 			}
 			m_Channel = null;
 
-			m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE_COMPLETE, this), true);
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE_COMPLETE, this), true);
 
-			if(m_ConnectionventHandler != null)
-				m_ConnectionventHandler.closed();
+			if(connectionventHandler != null)
+				connectionventHandler.closed();
 		}
 	}
 
@@ -314,68 +314,68 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	void initiateRead(FsmEvent evt)
 	{
 		// Tells the reactor to notify me of read events
-		m_Domain.registerHandler(this, SelectionKey.OP_READ);
+		domain.registerHandler(this, SelectionKey.OP_READ);
 	}
 
 	@Override
 	void initiateWrite(FsmEvent evt)
 	{
 		// Tells reactor to notify of write events
-		m_Domain.registerHandler(this, SelectionKey.OP_WRITE);
+		domain.registerHandler(this, SelectionKey.OP_WRITE);
 	}
 
 	@Override
 	void openComplete(FsmEvent evt)
 	{
-		if(m_ConnectionventHandler != null)
-			m_ConnectionventHandler.openCompleted();
+		if(connectionventHandler != null)
+			connectionventHandler.openCompleted();
 	}
 
 	@Override
 	void openFailed(FsmEvent evt)
 	{
 		AfxFsmEvent afxEvt = (AfxFsmEvent)evt;
-		if(m_ConnectionventHandler != null)
-			m_ConnectionventHandler.openFailed(afxEvt != null ? afxEvt.getCause() : "unknown");
+		if(connectionventHandler != null)
+			connectionventHandler.openFailed(afxEvt != null ? afxEvt.getCause() : "unknown");
 	}
 
 	@Override
 	void readComplete(FsmEvent evt)
 	{
-		m_ReadBuffer.flip();
-		if(m_ReadEventHandler != null)
-			m_ReadEventHandler.readCompleted(m_ReadBuffer);
+		readBuffer.flip();
+		if(readEventHandler != null)
+			readEventHandler.readCompleted(readBuffer);
 	}
 
 	@Override
 	void readFailed(FsmEvent evt)
 	{
-		if(m_ReadEventHandler != null)
-			m_ReadEventHandler.readFailed();
+		if(readEventHandler != null)
+			readEventHandler.readFailed();
 	}
 
 	@Override
 	void writeComplete(FsmEvent evt)
 	{
-		if(null != m_WriteEventHandler)
-			m_WriteEventHandler.writeCompleted();
+		if(null != writeEventHandler)
+			writeEventHandler.writeCompleted();
 	}
 
 	@Override
 	void writeFailed(FsmEvent evt)
 	{
-		if(null != m_WriteEventHandler)
-			m_WriteEventHandler.writeFailed();
+		if(null != writeEventHandler)
+			writeEventHandler.writeFailed();
 	}
 
 	@Override
 	void readWriteFailed(FsmEvent evt)
 	{
-		if(m_ReadEventHandler != null)
-			m_ReadEventHandler.readFailed();
+		if(readEventHandler != null)
+			readEventHandler.readFailed();
 
-		if(null != m_WriteEventHandler)
-			m_WriteEventHandler.writeFailed();
+		if(null != writeEventHandler)
+			writeEventHandler.writeFailed();
 	}
 	
 	@Override

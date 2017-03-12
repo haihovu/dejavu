@@ -92,8 +92,9 @@ class AfxFsmEvent implements FsmEvent {
 	 * @param context The FSM context to receive this event
 	 */
 	AfxFsmEvent(int id, FsmContext context) {
-		m_Id = id;
-		m_Context = context;
+		this.id = id;
+		this.context = context;
+		channel = null;
 	}
 
 	/**
@@ -104,9 +105,10 @@ class AfxFsmEvent implements FsmEvent {
 	 * @param cause The failure cause
 	 */
 	AfxFsmEvent(int id, FsmContext context, String cause) {
-		m_Id = id;
-		m_Cause = cause;
-		m_Context = context;
+		this.id = id;
+		this.cause = cause;
+		this.context = context;
+		channel = null;
 	}
 
 	/**
@@ -122,11 +124,12 @@ class AfxFsmEvent implements FsmEvent {
 	 * connection events.
 	 */
 	AfxFsmEvent(int id, FsmContext context, String ipAddr, int ipPort, AfxEventHandler handler) {
-		m_Id = id;
-		m_Context = context;
-		m_IpAddr = ipAddr;
-		m_IpPort = ipPort;
-		m_EventHandler = handler;
+		this.id = id;
+		this.context = context;
+		this.ipAddr = ipAddr;
+		this.ipPort = ipPort;
+		eventHandler = handler;
+		channel = null;
 	}
 
 	/**
@@ -139,10 +142,11 @@ class AfxFsmEvent implements FsmEvent {
 	 * read/write events.
 	 */
 	AfxFsmEvent(int id, FsmContext context, ByteBuffer buffer, AfxEventHandler handler) {
-		m_Id = id;
-		m_Context = context;
-		m_Buffer = buffer;
-		m_EventHandler = handler;
+		this.id = id;
+		this.context = context;
+		this.buffer = buffer;
+		eventHandler = handler;
+		channel = null;
 	}
 
 	/**
@@ -155,20 +159,20 @@ class AfxFsmEvent implements FsmEvent {
 	 * connection events.
 	 */
 	AfxFsmEvent(int id, FsmContext context, SelectableChannel channel, AfxEventHandler handler) {
-		m_Id = id;
-		m_Context = context;
-		m_Channel = channel;
-		m_EventHandler = handler;
+		this.id = id;
+		this.context = context;
+		this.channel = channel;
+		eventHandler = handler;
 	}
 
 	@Override
 	public FsmContext getContext() {
-		return m_Context;
+		return context;
 	}
 
 	@Override
 	public int getId() {
-		return m_Id;
+		return id;
 	}
 
 	/**
@@ -179,7 +183,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * set.
 	 */
 	public String getCause() {
-		return m_Cause;
+		return cause;
 	}
 
 	/**
@@ -190,7 +194,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * not set.
 	 */
 	public ByteBuffer getBuffer() {
-		return m_Buffer;
+		return buffer;
 	}
 
 	/**
@@ -201,7 +205,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * if not set.
 	 */
 	public SelectableChannel getChannel() {
-		return m_Channel;
+		return channel;
 	}
 
 	/**
@@ -212,7 +216,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * if not set.
 	 */
 	public AfxEventHandler getEventHandler() {
-		return m_EventHandler;
+		return eventHandler;
 	}
 
 	/**
@@ -223,7 +227,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * not set.
 	 */
 	public String getIpAddr() {
-		return m_IpAddr;
+		return ipAddr;
 	}
 
 	/**
@@ -234,7 +238,7 @@ class AfxFsmEvent implements FsmEvent {
 	 * not set.
 	 */
 	public int getIpPort() {
-		return m_IpPort;
+		return ipPort;
 	}
 
 	@Override
@@ -284,22 +288,22 @@ class AfxFsmEvent implements FsmEvent {
 				retValue.append("UNKNOWN");
 		}
 
-		return retValue.append(".").append(m_IpAddr).append(":").append(m_IpPort).toString();
+		return retValue.append(".").append(ipAddr).append(":").append(ipPort).toString();
 	}
 
 	/**
 	 * @supplierCardinality 1
 	 */
-	private final FsmContext m_Context;
-	private ByteBuffer m_Buffer = null;
-	private int m_Id;
-	private SelectableChannel m_Channel;
-	private String m_Cause;
+	private final FsmContext context;
+	private ByteBuffer buffer = null;
+	private final int id;
+	private final SelectableChannel channel;
+	private String cause;
 
 	/**
 	 * @supplierCardinality 1
 	 */
-	private AfxEventHandler m_EventHandler = null;
-	private String m_IpAddr;
-	private int m_IpPort;
+	private AfxEventHandler eventHandler = null;
+	private String ipAddr;
+	private int ipPort;
 }

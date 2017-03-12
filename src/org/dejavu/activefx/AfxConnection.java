@@ -26,8 +26,8 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public AfxConnection(AfxDomain domain)
 	{
-		m_Domain = domain;
-		setCurrentState(m_Domain.getInitialState());
+		this.domain = domain;
+		setCurrentState(this.domain.getInitialState());
 	}	
 
 	/**
@@ -39,7 +39,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean open(String remoteIpAddr, int remoteIpPort, AfxEventHandler handler)
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, remoteIpAddr, remoteIpPort, handler), false);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, remoteIpAddr, remoteIpPort, handler), false);
 	}
 
 	/**
@@ -50,7 +50,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean open(SelectableChannel channel, AfxEventHandler handler)
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, channel, handler), true);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, channel, handler), true);
 	}
 
 	/**
@@ -59,7 +59,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean close()
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), true);
 	}
 
 	/**
@@ -72,7 +72,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean read(ByteBuffer buffer, AfxEventHandler handler)
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ, this, buffer, handler), true);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ, this, buffer, handler), true);
 	}
 
 	/**
@@ -85,7 +85,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean write(ByteBuffer buffer, AfxEventHandler handler)
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE, this, buffer, handler), true);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE, this, buffer, handler), true);
 	}
 
 	/**
@@ -96,7 +96,7 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	public boolean connect(SocketChannel sockChannel, AfxEventHandler handler) 
 	{
-		return m_Domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CONNECT, this, sockChannel, handler), true);
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CONNECT, this, sockChannel, handler), true);
 	}
 
 	/**
@@ -123,7 +123,7 @@ public abstract class AfxConnection implements  FsmContext
 	@Override
 	public FsmDomain getFsmDomain()
 	{
-		return m_Domain.getFsmDomain();
+		return domain.getFsmDomain();
 	}
 
 	@Override
@@ -172,17 +172,17 @@ public abstract class AfxConnection implements  FsmContext
 		try
 		{
 			AfxFsmEvent event = (AfxFsmEvent)evt;
-			if(null != (m_ReadBuffer = event.getBuffer()))
+			if(null != (readBuffer = event.getBuffer()))
 			{
-				m_ReadBuffer.clear();
-				m_ReadEventHandler = event.getEventHandler();
+				readBuffer.clear();
+				readEventHandler = event.getEventHandler();
 				return true;
 			}
 		}
 		catch(Exception e)
 		{
 			DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-			m_ReadBuffer = null;
+			readBuffer = null;
 		}
 		
 		return false;
@@ -196,7 +196,7 @@ public abstract class AfxConnection implements  FsmContext
 			AfxFsmEvent event = (AfxFsmEvent)evt;
 			if(null != (m_WriteBuffer = event.getBuffer()))
 			{
-				m_WriteEventHandler = event.getEventHandler();
+				writeEventHandler = event.getEventHandler();
 				return true;
 			}
 		}
@@ -214,7 +214,7 @@ public abstract class AfxConnection implements  FsmContext
 	public final static int AFX_CONNECTION_TLS = 3;
 
 	@SuppressWarnings("ProtectedField")
-	protected ByteBuffer m_ReadBuffer = null;
+	protected ByteBuffer readBuffer = null;
 	@SuppressWarnings("ProtectedField")
 	protected ByteBuffer m_WriteBuffer = null;
 	
@@ -223,25 +223,25 @@ public abstract class AfxConnection implements  FsmContext
 	 */
 	
 	@SuppressWarnings("ProtectedField")
-	protected AfxDomain m_Domain = null;
+	protected AfxDomain domain = null;
 
 	/**
 	 * Handler of connection events
 	 */
 	@SuppressWarnings("ProtectedField")
-	protected AfxEventHandler m_ConnectionventHandler = null;
+	protected AfxEventHandler connectionventHandler = null;
 
 	/**
 	 * Handler of read events
 	 */
 	@SuppressWarnings("ProtectedField")
-	protected AfxEventHandler m_ReadEventHandler = null;
+	protected AfxEventHandler readEventHandler = null;
 
 	/**
 	 * Handler of write events
 	 */
 	@SuppressWarnings("ProtectedField")
-	protected AfxEventHandler m_WriteEventHandler = null;
+	protected AfxEventHandler writeEventHandler = null;
 
 	/**
 	 * Current state of the connection
