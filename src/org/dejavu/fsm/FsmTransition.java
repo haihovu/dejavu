@@ -37,8 +37,9 @@ public class FsmTransition {
 	 *
 	 * @param event The event to be executed.
 	 * @return True if the event was executed, false otherwise.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
-	public boolean execute(FsmEvent event) {
+	public boolean execute(FsmEvent event) throws InterruptedException {
 		// Execute guard if one is specified...
 		if ((null == guard) || (guard.handleEvent(event))) {
 			// Execute the exit action of the current state
@@ -63,62 +64,35 @@ public class FsmTransition {
 		return false;
 	}
 
-	/**
-	 * Gets the begin state of the transition.
-	 *
-	 * @return The begin state.
-	 */
-	public FsmState getFromState() {
-		return fromState;
-	}
-
-	/**
-	 * Gets the end state of the transition.
-	 *
-	 * @return The to state
-	 */
-	public FsmState getToState() {
-		return toState;
-	}
-
-	/**
-	 * Gets the trigger event associated with this transition.
-	 *
-	 * @return The trigger event ID
-	 */
-	public int getEventId() {
-		return eventId;
-	}
-
 	@Override
 	public String toString() {
-		return "(FsmTransition from=" + fromState + " to=" + toState + ")";
+		return "FsmTransition{" + "eventId=" + eventId + ", fromState=" + fromState + ", toState=" + toState + ", action=" + action + ", guard=" + guard + '}';
 	}
 
 	/**
 	 * Trigger event ID
 	 */
-	private final int eventId;
+	public final int eventId;
 
 	/**
 	 * Begin state
 	 */
-	private final FsmState fromState;
+	public final FsmState fromState;
 
 	/**
 	 * End state
 	 */
-	private final FsmState toState;
+	public final FsmState toState;
 
 	/**
 	 * Action
 	 */
-	private final FsmAction action;
+	public final FsmAction action;
 
 	/**
 	 * Guard
 	 */
-	private final FsmAction guard;
+	public final FsmAction guard;
 
 	/** @link dependency */
 	/*# FsmEvent lnkFsmEvent; */

@@ -16,38 +16,21 @@ public class FsmState {
 	 * @param exitFunction Exit function (null if none is required)
 	 */
 	public FsmState(String name, FsmAction entryFunction, FsmAction exitFunction) {
-		m_Name = name;
-		m_EntryAction = entryFunction;
-		m_ExitAction = exitFunction;
-		m_Id = FsmUtilities.registerState(name);
-	}
-
-	/**
-	 * Gets the state name
-	 *
-	 * @return The name of the state.
-	 */
-	public String getName() {
-		return m_Name;
-	}
-
-	/**
-	 * Gets the automatically generated state ID.
-	 *
-	 * @return The integer ID of the state
-	 */
-	public int getId() {
-		return m_Id;
+		this.name = name;
+		entryAction = entryFunction;
+		exitAction = exitFunction;
+		id = FsmUtilities.registerState(name);
 	}
 
 	/**
 	 * Executes the entry function, if exists.
 	 *
 	 * @param event The event to be passed into the state entry function.
+	 * @throws java.lang.InterruptedException User Interruptionm
 	 */
-	public void executeEntry(FsmEvent event) {
-		if (null != m_EntryAction) {
-			m_EntryAction.handleEvent(event);
+	public void executeEntry(FsmEvent event) throws InterruptedException {
+		if (null != entryAction) {
+			entryAction.handleEvent(event);
 		}
 	}
 
@@ -55,28 +38,30 @@ public class FsmState {
 	 * Executes the exit function, if exists.
 	 *
 	 * @param event The event to be passed to the state exit function.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
-	public void executeExit(FsmEvent event) {
-		if (null != m_ExitAction) {
-			m_ExitAction.handleEvent(event);
+	public void executeExit(FsmEvent event) throws InterruptedException {
+		if (null != exitAction) {
+			exitAction.handleEvent(event);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "(FsmState " + m_Name + ")";
+		return "FsmState{" + "id=" + id + ", name=" + name + '}';
 	}
 
-	private final int m_Id;
-	private final String m_Name;
+	
+	public final int id;
+	public final String name;
 
 	/**
 	 * @supplierCardinality 1
 	 */
-	private final FsmAction m_ExitAction;
+	private final FsmAction exitAction;
 
 	/**
 	 * @supplierCardinality 1
 	 */
-	private final FsmAction m_EntryAction;
+	private final FsmAction entryAction;
 }

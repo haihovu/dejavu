@@ -58,8 +58,8 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	}
 
 	@Override
-	public boolean dispatchEvent(FsmEvent event, boolean queued) {
-		if (null != m_DispatchingThread) {
+	public boolean dispatchEvent(FsmEvent event, boolean queued) throws InterruptedException {
+		if (null != dispatchingThread) {
 			return super.dispatchEvent(event, queued);
 		}
 
@@ -113,7 +113,7 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	private static class InitiateOpen implements FsmAction {
 
 		@Override
-		public boolean handleEvent(FsmEvent event) {
+		public boolean handleEvent(FsmEvent event) throws InterruptedException {
 			AfxConnection thisConnection = (AfxConnection) event.getContext();
 			thisConnection.initiateOpen(event);
 			return true;
@@ -123,7 +123,7 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	private static class HandleHandshake implements FsmAction {
 
 		@Override
-		public boolean handleEvent(FsmEvent event) {
+		public boolean handleEvent(FsmEvent event) throws InterruptedException {
 			AfxConnection thisConnection = (AfxConnection) event.getContext();
 			thisConnection.handleHandshake(event);
 			return true;
@@ -153,7 +153,7 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	private static class InitiateClose implements FsmAction {
 
 		@Override
-		public boolean handleEvent(FsmEvent event) {
+		public boolean handleEvent(FsmEvent event) throws InterruptedException {
 			AfxConnection thisConnection = (AfxConnection) event.getContext();
 			thisConnection.initiateClose(event);
 			return true;
@@ -163,7 +163,7 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	private static class InitiateRead implements FsmAction {
 
 		@Override
-		public boolean handleEvent(FsmEvent event) {
+		public boolean handleEvent(FsmEvent event) throws InterruptedException {
 			AfxConnection thisConnection = (AfxConnection) event.getContext();
 			thisConnection.initiateRead(event);
 			return true;
@@ -245,7 +245,7 @@ class AfxConnectionFsmDomain extends FsmDomain {
 	private static class InitiateConnect implements FsmAction {
 
 		@Override
-		public boolean handleEvent(FsmEvent event) {
+		public boolean handleEvent(FsmEvent event) throws InterruptedException {
 			AfxConnection thisConnection = (AfxConnection) event.getContext();
 			thisConnection.initiateConnect(event);
 			return true;

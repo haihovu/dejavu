@@ -113,7 +113,7 @@ class AfxReactor implements Runnable {
 						key.attach(handler);
 					} else {
 						DjvSystem.logError(Category.DESIGN,
-								"Failed to register " + handler + " with selector");
+							"Failed to register " + handler + " with selector");
 					}
 				}
 			} else {
@@ -125,7 +125,7 @@ class AfxReactor implements Runnable {
 						key.interestOps(interestOps);
 					} else {
 						DjvSystem.logInfo(Category.DESIGN,
-								"Already registered for " + events + " @ " + DjvExceptionUtil.getCompressedTrace());
+							"Already registered for " + events + " @ " + DjvExceptionUtil.getCompressedTrace());
 					}
 				} else {
 					key.cancel();
@@ -133,10 +133,10 @@ class AfxReactor implements Runnable {
 			}
 		} catch (java.nio.channels.ClosedChannelException e) {
 			DjvSystem.logError(Category.DESIGN,
-					"Channel " + handler.getHandle() + " closed");
+				"Channel " + handler.getHandle() + " closed");
 		} catch (CancelledKeyException e) {
 			DjvSystem.logError(Category.DESIGN,
-					"Channel " + handler.getHandle() + " encountered cancelled key @ " + DjvExceptionUtil.simpleTrace(e));
+				"Channel " + handler.getHandle() + " encountered cancelled key @ " + DjvExceptionUtil.simpleTrace(e));
 		}
 	}
 
@@ -261,12 +261,10 @@ class AfxReactor implements Runnable {
 					}
 				}
 			}
-		} catch (IOException e) {
+		} catch (IOException | RuntimeException e) {
 			DjvSystem.logWarning(Category.DESIGN, this + " terminated due to "
 					+ DjvExceptionUtil.simpleTrace(e));
-		} catch (RuntimeException e) {
-			DjvSystem.logError(Category.DESIGN, this + " terminated due to "
-					+ DjvExceptionUtil.simpleTrace(e));
+		} catch(InterruptedException e) {
 		} finally {
 			try {
 				selector.close();
@@ -316,7 +314,7 @@ class AfxReactor implements Runnable {
 
 	private final Selector selector;
 	private boolean started = false;
-	private boolean running = true;
+	private volatile boolean running = true;
 
 	/** @link dependency */
 	/*# ReactorEventHandler lnkReactorEventHandler; */

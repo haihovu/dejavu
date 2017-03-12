@@ -12,6 +12,7 @@ public interface FsmAction {
 	 *
 	 * @param event The event to be handled
 	 * @return True if the event was handled, false otherwise.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
-	boolean handleEvent(FsmEvent event);
+	boolean handleEvent(FsmEvent event) throws InterruptedException;
 }

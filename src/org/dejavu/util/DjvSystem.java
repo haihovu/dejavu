@@ -375,7 +375,7 @@ public abstract class DjvSystem {
 			if (null == gLogHandler) {
 				// If no log handler already registered then use a simple implementation
 				gLogHandler = new DjvLogHandler() {
-					private int m_LogLevel = 1;
+					private int m_LogLevel = 2;
 
 					@Override
 					public synchronized int getLogFilterLevel() {

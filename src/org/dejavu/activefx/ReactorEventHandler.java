@@ -16,22 +16,22 @@ interface ReactorEventHandler {
 	/**
 	 * A connect event is detected by the reactor.
 	 */
-	void onConnect();
+	void onConnect() throws InterruptedException;
 
 	/**
 	 * A disconnect event is detected by the reactor.
 	 */
-	void onDisconnect();
+	void onDisconnect() throws InterruptedException;
 
 	/**
 	 * A read event is detected by the reactor.
 	 */
-	void onRead();
+	void onRead() throws InterruptedException;
 
 	/**
 	 * A write event is detected by the reactor.
 	 */
-	void onWrite();
+	void onWrite() throws InterruptedException;
 
 	/**
 	 * Retrieves the selectable channel associated with this reactor client.

@@ -18,8 +18,9 @@ public class FsmTransitionTable {
 	 * criteria was found.
 	 */
 	public FsmTransition getTransition(FsmState fromState, int triggerEvent) {
-		synchronized (m_StateMap) {
-			TransitionMap transitionMap = m_StateMap[fromState.getId()];
+		TransitionMap transitionMap;
+		synchronized (stateMap) {
+			transitionMap = stateMap[fromState.id];
 			if (null != transitionMap) {
 				return transitionMap.locateTransition(triggerEvent);
 			}
@@ -34,12 +35,12 @@ public class FsmTransitionTable {
 	 * @throws FsmException
 	 */
 	public void setTransition(FsmTransition newTransition) throws FsmException {
-		synchronized (m_StateMap) {
-			TransitionMap transitionMap = m_StateMap[newTransition.getFromState().getId()];
+		synchronized (stateMap) {
+			TransitionMap transitionMap = stateMap[newTransition.fromState.id];
 			if (null != transitionMap) {
 				// Found the state-event table for the desired state
 				// Now look for the desired event ID in the table
-				if (null == transitionMap.locateTransition(newTransition.getEventId())) {
+				if (null == transitionMap.locateTransition(newTransition.eventId)) {
 					// The event is not in the table, now add it with the transition
 					transitionMap.addTransition(newTransition);
 				} else {
@@ -49,8 +50,8 @@ public class FsmTransitionTable {
 			} else {
 				// The desired state was not in the map, add a new entry for it and retry
 				TransitionMap newTransitionMap = new TransitionMap();
-				m_StateMap[newTransition.getFromState().getId()] = newTransitionMap;
-				newTransitionMap.m_Transitions[newTransition.getEventId()] = newTransition;
+				stateMap[newTransition.fromState.id] = newTransitionMap;
+				newTransitionMap.transitions[newTransition.eventId] = newTransition;
 			}
 		}
 	}
@@ -58,7 +59,7 @@ public class FsmTransitionTable {
 	/**
 	 * Map for managing transition lookup indices.
 	 */
-	private final TransitionMap[] m_StateMap = new TransitionMap[2048];
+	private final TransitionMap[] stateMap = new TransitionMap[2048];
 
 	/**
 	 * Map for managing transition lookup indices for individual state, each
@@ -81,9 +82,9 @@ public class FsmTransitionTable {
 		 * criteria was found.
 		 */
 		public FsmTransition locateTransition(int eventId) {
-			synchronized (m_Transitions) {
-				if ((eventId > -1) && (eventId < m_Transitions.length)) {
-					return m_Transitions[eventId];
+			synchronized (transitions) {
+				if ((eventId > -1) && (eventId < transitions.length)) {
+					return transitions[eventId];
 				}
 			}
 			return null;
@@ -95,9 +96,10 @@ public class FsmTransitionTable {
 		 * @param trans The transition record to be added.
 		 */
 		public void addTransition(FsmTransition trans) {
-			synchronized (m_Transitions) {
-				if ((trans.getEventId() > -1) && (trans.getEventId() < m_Transitions.length)) {
-					m_Transitions[trans.getEventId()] = trans;
+			synchronized (transitions) {
+				int id = trans.eventId;
+				if ((id > -1) && (id < transitions.length)) {
+					transitions[id] = trans;
 				}
 			}
 		}
@@ -105,6 +107,6 @@ public class FsmTransitionTable {
 		/**
 		 * State transition map keyed on trigger event ID's.
 		 */
-		private final FsmTransition[] m_Transitions = new FsmTransition[1024];
+		private final FsmTransition[] transitions = new FsmTransition[1024];
 	}
 }
