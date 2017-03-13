@@ -17,9 +17,13 @@ import java.nio.channels.DatagramChannel;
  */
 public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandler, FsmContext {
 
-	public AfxConnectionUdp(AfxDomain domain, int localPort) {
+	/**
+	 * Creates an unconnected UDP channel. Must call open() or connect() before
+	 * use.
+	 * @param domain The AFX domain.
+	 */
+	public AfxConnectionUdp(AfxDomain domain) {
 		super(domain);
-		m_LocalPort = localPort;
 	}
 
 	@Override
@@ -27,13 +31,14 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 		return AfxConnection.AFX_CONNECTION_UDP;
 	}
 
+	/**
+	 * Open a UDP connection to a remote target, use a local ephemeral port.
+	 * @param remote The remote UDP address.
+	 * @param handler The handler for receiving asynchronous events.
+	 * @throws IOException Connection failure
+	 * @throws InterruptedException User interruption.
+	 */
 	public void connect(SocketAddress remote, AfxEventHandler handler) throws IOException, InterruptedException {
-		if (null == m_RemoteAddress) {
-			m_RemoteAddress = remote;
-		} else if (!m_RemoteAddress.equals(remote)) {
-			DjvSystem.logWarning(Category.DESIGN, "Attempted to change " + m_RemoteAddress
-				+ " to " + remote + " rejected request");
-		}
 		DatagramChannel senderChannel = DatagramChannel.open();
 		senderChannel.configureBlocking(false);
 		senderChannel.connect(remote);
@@ -54,9 +59,9 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	public void onWrite() throws InterruptedException {
 		try {
 			domain.deregisterHandler(this, SelectionKey.OP_WRITE);
-			if (null != m_RemoteAddress) {
+			if (null != remoteAddress) {
 				int byteWritten;
-				if (0 < (byteWritten = channel.send(m_WriteBuffer, m_RemoteAddress))) {
+				if (0 < (byteWritten = channel.send(m_WriteBuffer, remoteAddress))) {
 					if (byteWritten < m_WriteBuffer.limit()) {
 						DjvSystem.logWarning(Category.DESIGN, "Datagram only partially written");
 					}
@@ -104,7 +109,8 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 			if ((readBuffer != null) && (readBuffer.hasRemaining())) {
 				SocketAddress sender = channel.receive(readBuffer);
 				if (sender != null) {
-					m_ReadFailCount = 0;
+					remoteAddress = sender;
+					readFailCount = 0;
 
 					// Datagram is a read once process
 					domain.deregisterHandler(this, SelectionKey.OP_READ);
@@ -116,14 +122,14 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 				} else {
 					// UDP not yet ready for read, though the fact that we're in
 					// here means the read flag is on. Continue to wait for just a bit more.
-					if (++m_ReadFailCount < 10) {
+					if (++readFailCount < 10) {
 						return;
 					}
 					DjvSystem.logError(Category.DESIGN,
 						"For some reason we got no UDP packet for reading, terminate this connection");
 				}
 
-				m_ReadFailCount = 0;
+				readFailCount = 0;
 				domain.deregisterHandler(this, SelectionKey.OP_READ);
 				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.READ_FAILURE, this), true);
 			} else {
@@ -221,20 +227,20 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 			if (channel != null) {
 				channel.close();
 			}
-
 			if (null == afxEvent.channel) {
+				localPort = afxEvent.ipPort;
 				channel = DatagramChannel.open();
-				channel.socket().bind(new InetSocketAddress(m_LocalPort));
+				channel.socket().bind(new InetSocketAddress(localPort));
 				channel.configureBlocking(false);
 			} else if(afxEvent.channel instanceof DatagramChannel) {
 				channel = (DatagramChannel)afxEvent.channel;
+				SocketAddress locAdr = channel.getLocalAddress();
+				if(locAdr instanceof InetSocketAddress) {
+					localPort = ((InetSocketAddress)locAdr).getPort();
+				}
 				channel.configureBlocking(false);
 			}
 			
-			if (null != afxEvent.ipAddr) {
-				m_RemoteAddress = new InetSocketAddress(afxEvent.ipAddr, afxEvent.ipPort);
-			}
-
 			// This is UDP we can't wait for CONNECT event from Reactor for UDP channel
 			onConnect();
 		} catch (IOException e) {
@@ -344,9 +350,10 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 				channel.configureBlocking(false);
 			} else {
 				channel = DatagramChannel.open();
+				channel.configureBlocking(false);
 				channel.connect(new InetSocketAddress(afxEvent.ipAddr, afxEvent.ipPort));
 			}
-			m_RemoteAddress = channel.getRemoteAddress();
+			remoteAddress = channel.getRemoteAddress();
 
 			// This is UDP we can't wait for CONNECT event from Reactor for UDP channel
 			onConnect();
@@ -357,13 +364,13 @@ public class AfxConnectionUdp extends AfxConnection implements ReactorEventHandl
 	}
 
 	private DatagramChannel channel = null;
-	private final int m_LocalPort;
+	private int localPort = -1;
 
 	/** @link dependency */
 	/*# AfxReactor lnkAfxReactor; */
-	private SocketAddress m_RemoteAddress;
+	private SocketAddress remoteAddress;
 
 	/** @link dependency */
 	/*# AfxFsmEvent lnkAfxFsmEvent; */
-	private int m_ReadFailCount = 0;
+	private int readFailCount = 0;
 }

@@ -11,7 +11,6 @@ import org.dejavu.util.DjvExceptionUtil;
 import org.dejavu.util.DjvLogMsg.Category;
 import org.dejavu.util.DjvSystem;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.SocketChannel;
 
 /**
  * The abstract interface for all Active FX connection types.
@@ -41,6 +40,19 @@ public abstract class AfxConnection implements FsmContext {
 	 */
 	public boolean open(String remoteIpAddr, int remoteIpPort, AfxEventHandler handler) throws InterruptedException {
 		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, remoteIpAddr, remoteIpPort, handler), false);
+	}
+
+	/**
+	 * Open a connection for receiving data.
+	 *
+	 * @param localPort The port for local binding.
+	 * @param handler The event handler to receive acknowledgements.
+	 * @return True if the request had been initiated, false if the request
+	 * failed to start some how.
+	 * @throws java.lang.InterruptedException
+	 */
+	public boolean open(int localPort, AfxEventHandler handler) throws InterruptedException {
+		return domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN, this, localPort, handler), false);
 	}
 
 	/**

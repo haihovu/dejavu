@@ -120,6 +120,25 @@ class AfxFsmEvent implements FsmEvent {
 	 *
 	 * @param id The event ID
 	 * @param context The FSM context to receive this event
+	 * @param ipPort The IP port of the remote endpoint with which to inititate
+	 * the connection
+	 * @param handler The interface to the callback object for receiving
+	 * connection events.
+	 */
+	AfxFsmEvent(int id, FsmContext context, int ipPort, AfxEventHandler handler) {
+		this.id = id;
+		this.context = context;
+		this.ipAddr = null;
+		this.ipPort = ipPort;
+		eventHandler = handler;
+		channel = null;
+	}
+
+	/**
+	 * Creates a new AfxFsmEvent, for use with open requests.
+	 *
+	 * @param id The event ID
+	 * @param context The FSM context to receive this event
 	 * @param ipAddr The IP address of the remote endpoint with which to
 	 * initiate the connection.
 	 * @param ipPort The IP port of the remote endpoint with which to inititate

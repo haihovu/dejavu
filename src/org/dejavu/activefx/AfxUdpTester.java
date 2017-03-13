@@ -141,8 +141,8 @@ public class AfxUdpTester {
 	}
 	
 	public AfxUdpTester() {
-		this.receivor = new AfxConnectionUdp(gDomain, 12344);
-		this.connector = new AfxConnectionUdp(gDomain, 12344);
+		this.receivor = new AfxConnectionUdp(gDomain);
+		this.connector = new AfxConnectionUdp(gDomain);
 	}
 	
 	private void stopTest() {
@@ -155,7 +155,7 @@ public class AfxUdpTester {
 	@SuppressWarnings("SleepWhileInLoop")
 	void test() throws InterruptedException {
 		try {
-			receivor.open(null, new AfxEventAdaptor(){
+			receivor.open(12344, new AfxEventAdaptor(){
 				@Override
 				public void closed() {
 					super.closed(); 
