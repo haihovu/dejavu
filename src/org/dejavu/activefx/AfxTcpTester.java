@@ -227,7 +227,7 @@ public class AfxTcpTester {
 	public static void main(String[] args) {
 		try {
 			DjvSystem.setLogLevel(2);
-			gDomain.start(10, 5);
+			gDomain.start(1024, 5);
 			AfxTcpTester tester = new AfxTcpTester();
 			tester.test();
 		} catch (InterruptedException ex) {
