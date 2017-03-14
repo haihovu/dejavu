@@ -155,7 +155,8 @@ public class AfxAcceptor {
 			try {
 				// Only accept TCP connection for now
 				SocketChannel newChannel = localChannel != null ? localChannel.accept() : null;
-				domain.deregisterHandler(this, java.nio.channels.SelectionKey.OP_ACCEPT);
+				// Why?
+				//domain.deregisterHandler(this, java.nio.channels.SelectionKey.OP_ACCEPT);
 				if (null != newChannel) {
 					newChannel.configureBlocking(false);
 					Socket sock = newChannel.socket();

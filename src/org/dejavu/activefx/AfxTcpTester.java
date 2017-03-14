@@ -8,7 +8,6 @@ package org.dejavu.activefx;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.dejavu.fsm.FsmException;
@@ -23,42 +22,38 @@ import org.dejavu.util.DjvSystem;
  */
 public class AfxTcpTester {
 	final AfxAcceptor acceptor;
-	final AfxConnection connector;
+	private final TestContext context = new TestContext();
 	private static final AfxDomain gDomain;
-	private final byte [] data = new byte[1024];
-	private boolean dataReady;
 	private boolean done;
 	
 	private class DataConsumer {
 		private final AfxEventHandler handler = new AfxEventAdaptor() {
 			@Override
+			public void readFailed() {
+				super.readFailed(); 
+				connection.close();
+			}
+
+			@Override
 			public void readCompleted(ByteBuffer returnedBuffer) {
-				new Thread(() -> {
-					try {
-						super.readCompleted(returnedBuffer);
-						byte[] returnData = returnedBuffer.array();
-						synchronized(data) {
-							for(int i = 0; i <  returnData.length; ++i) {
-								if(returnData[i] != data[i]) {
-									DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Data check failed");
-								}
-							}
-							dataReady = false;
-							data.notify();
-						}
-						initiateRead();
-					} catch (InterruptedException ex) {
-						stopTest();
-					}
-				}).start();
+				super.readCompleted(returnedBuffer);
+				try {
+					initiateRead();
+				} catch (InterruptedException ex) {
+					connection.close();
+				}
 			}
 		};
+		
 		private final AfxConnection connection;
-		private final ByteBuffer buf = ByteBuffer.allocate(1024);
+		private final ByteBuffer buf = ByteBuffer.allocate(512);
+		
 		private DataConsumer(AfxConnection conn) {
 			super();
 			connection = conn;
+			context.increment();
 		}
+		
 		private void initiateRead() throws InterruptedException {
 			DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Initiate read on " + connection);
 			buf.rewind();
@@ -79,9 +74,6 @@ public class AfxTcpTester {
 			@Override
 			public void writeCompleted() {
 				super.writeCompleted();
-				synchronized(AfxTcpTester.this) {
-					dataReady = true;
-				}
 				synchronized(DataProducer.this) {
 					if(--maxWrite > 0) {
 						initiateWrite();
@@ -91,9 +83,11 @@ public class AfxTcpTester {
 				}
 			}
 		};
+		
 		private final AfxConnection connection;
 		private final ByteBuffer buf;
 		private int maxWrite;
+		private final byte [] data = new byte[1024];
 		
 		private DataProducer(AfxConnection connection, int maxWrites) {
 			super("Produce");
@@ -105,22 +99,18 @@ public class AfxTcpTester {
 		private void initiateWrite() {
 			new Thread(() -> {
 				try {
-					int safety = 10;
-					synchronized(data) {
-						while(dataReady && (--safety > 0)) {
-							data.wait(1000);
-						}
-						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Initiate write on " + connection);
-						for(int i = 0; i < data.length; ++i) {
-							data[i] = (byte)(Math.random() * 256.0);
-						}
-						buf.rewind();
-						buf.put(data);
-						buf.rewind();
+					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Initiate write on " + connection);
+					for(int i = 0; i < data.length; ++i) {
+						data[i] = (byte)(Math.random() * 256.0);
 					}
+					
+					buf.rewind();
+					buf.put(data);
+					buf.rewind();
+
 					connection.write(buf, handler);
 				} catch(InterruptedException e) {
-					stopTest();
+					stop();
 				}
 			}).start();
 		}
@@ -136,16 +126,38 @@ public class AfxTcpTester {
 				}
 			} catch (InterruptedException ex) {
 			} finally {
-				stopTest();
+				connection.close();
+				context.decrement();
+			}
+		}
+	}
+
+	private class TestContext {
+		private int testerCount;
+		void increment() {
+			synchronized(this) {
+				++testerCount;
+			}
+		}
+		void decrement() {
+			synchronized(this) {
+				if(--testerCount <=0) {
+					stopTest();
+				}
 			}
 		}
 	}
 	
+	/**
+	 * Acceptor class
+	 */
 	private class Acceptor extends AfxEventAdaptor {
 		Acceptor() {
 			super();
 		}
-		
+		/**
+		 * Initiates the accept process
+		 */
 		private void accept() {
 			try {
 				acceptor.open("127.0.0.1", 12345, this);
@@ -173,7 +185,7 @@ public class AfxTcpTester {
 				tcp.connect(newChannel, new AfxEventAdaptor(){
 					@Override
 					public void openCompleted() {
-						DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, tcp + " opened, start reading");
+						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, tcp + " opened, start reading");
 						try {
 							new DataConsumer(tcp).initiateRead();
 						} catch (InterruptedException ex) {
@@ -186,9 +198,11 @@ public class AfxTcpTester {
 			}
 		}
 	}
+	public AfxTcpTester(AfxAcceptor acceptor) {
+		this.acceptor = acceptor;
+	}
 	public AfxTcpTester() {
 		this.acceptor = new AfxAcceptor(gDomain);
-		this.connector = new AfxConnectionTcp(gDomain);
 	}
 	
 	private void stopTest() {
@@ -197,18 +211,24 @@ public class AfxTcpTester {
 			this.notifyAll();
 		}
 	}
-	
+	/**
+	 * Conducts the test
+	 * @throws InterruptedException 
+	 */
 	@SuppressWarnings("SleepWhileInLoop")
 	void test() throws InterruptedException {
 		new Acceptor().accept();
 		try {
-			connector.open("127.0.0.1", 12345, new AfxEventAdaptor(){
-				@Override
-				public void openCompleted() {
-					super.openCompleted();
-					new DataProducer(connector, 1024).start();
-				}
-			});
+			for(int i = 0; i < 10; ++i) {
+				AfxConnection connector = new AfxConnectionTcp(gDomain);
+				connector.open("127.0.0.1", 12345, new AfxEventAdaptor(){
+					@Override
+					public void openCompleted() {
+						super.openCompleted();
+						new DataProducer(connector, 128).start();
+					}
+				});
+			}
 			int countdown = 1000;
 			while(countdown-- > 0) {
 				synchronized(this) {
@@ -219,9 +239,10 @@ public class AfxTcpTester {
 					}
 				}
 			}
+			Thread.sleep(1000);
 		} finally {
+			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Closing acceptor");
 			acceptor.close();
-			connector.close();
 		}
 	}
 	public static void main(String[] args) {
