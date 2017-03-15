@@ -8,6 +8,8 @@ package org.dejavu.activefx;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.dejavu.fsm.FsmException;
@@ -21,10 +23,11 @@ import org.dejavu.util.DjvSystem;
  * @author Hai Vu
  */
 public class AfxTcpTester {
-	final AfxAcceptor acceptor;
+	private final AfxAcceptor acceptor;
 	private final TestContext context = new TestContext();
 	private static final AfxDomain gDomain;
 	private boolean done;
+	private final Set<AfxConnection> consumers = new HashSet<>();
 	
 	private class DataConsumer {
 		private final AfxEventHandler handler = new AfxEventAdaptor() {
@@ -32,6 +35,7 @@ public class AfxTcpTester {
 			public void readFailed() {
 				super.readFailed(); 
 				connection.close();
+				done();
 			}
 
 			@Override
@@ -40,13 +44,31 @@ public class AfxTcpTester {
 				initiateRead();
 			}
 		};
+
+		@Override
+		public String toString() {
+			return "DataConsumer:{" + " connection=" + connection + '}';
+		}
 		
+		private void done() {
+			synchronized(consumers) {
+				consumers.remove(connection);
+				if(consumers.isEmpty()) {
+					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "No more consumer");
+				} else {
+					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, consumers.size() + " consumers left");
+				}
+			}
+		}
 		private final AfxConnection connection;
 		private final ByteBuffer buf = ByteBuffer.allocate(512);
 		
 		private DataConsumer(AfxConnection conn) {
 			super();
 			connection = conn;
+			synchronized(consumers) {
+				consumers.add(conn);
+			}
 			context.increment();
 		}
 		
@@ -58,9 +80,11 @@ public class AfxTcpTester {
 					if(!connection.read(buf, handler)) {
 						DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Failed to initiate read, terminate");
 						connection.close();
+						done();
 					}
 				} catch (InterruptedException ex) {
 					connection.close();
+					done();
 				}
 			}).start();
 		}
@@ -72,6 +96,11 @@ public class AfxTcpTester {
 			public void closed() {
 				super.closed();
 				stop();
+			}
+
+			@Override
+			public String toString() {
+				return "DataProducer:{connection:" + connection + '}';
 			}
 			
 			@Override
@@ -171,6 +200,11 @@ public class AfxTcpTester {
 		}
 
 		@Override
+		public String toString() {
+			return "Acceptor{acceptor:" + acceptor + '}';
+		}
+
+		@Override
 		public void acceptCompleted(AfxConnection newConnection) {
 			super.acceptCompleted(newConnection);
 			new DataConsumer(newConnection).initiateRead();
@@ -186,6 +220,10 @@ public class AfxTcpTester {
 					public void openCompleted() {
 						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, tcp + " opened, start reading");
 						new DataConsumer(tcp).initiateRead();
+					}
+					@Override
+					public String toString() {
+						return "receiver:{connection:" + tcp + "}";
 					}
 				});
 			} catch (InterruptedException ex) {
@@ -216,13 +254,17 @@ public class AfxTcpTester {
 	void test() throws InterruptedException {
 		new Acceptor().accept();
 		try {
-			for(int i = 0; i < 10; ++i) {
+			for(int i = 0; i < 64; ++i) {
 				AfxConnection connector = new AfxConnectionTcp(gDomain);
 				connector.open("127.0.0.1", 12345, new AfxEventAdaptor(){
 					@Override
 					public void openCompleted() {
 						super.openCompleted();
-						new DataProducer(connector, 128).start();
+						new DataProducer(connector, 256).start();
+					}
+					@Override
+					public String toString() {
+						return "Connector:{" + connector + "}";
 					}
 				});
 			}
@@ -249,6 +291,7 @@ public class AfxTcpTester {
 			gDomain.start(1024, 5);
 			AfxTcpTester tester = new AfxTcpTester();
 			tester.test();
+			Thread.sleep(1000);
 		} catch (InterruptedException ex) {
 		} catch (IOException ex) {
 			Logger.getLogger(AfxTcpTester.class.getName()).log(Level.SEVERE, null, ex);
@@ -262,6 +305,7 @@ public class AfxTcpTester {
 			tmp = new AfxDomain("Tester");
 		} catch (FsmException ex) {
 			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
+			System.exit(1);
 		}
 		gDomain = tmp;
 	}
