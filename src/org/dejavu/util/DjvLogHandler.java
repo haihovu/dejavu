@@ -25,7 +25,7 @@ public interface DjvLogHandler {
 	 * @param message The text message to log.
 	 * @return The log message that was saved. Not null.
 	 */
-	public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class origClass, String origMethod, String message);
+	public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class<?> origClass, String origMethod, String message);
 
 	/**
 	 * Logs a message.
