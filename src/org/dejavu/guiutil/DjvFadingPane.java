@@ -83,18 +83,15 @@ public abstract class DjvFadingPane extends JPanel{
 							if(isCleared()) {
 								break;
 							}
-							SwingUtilities.invokeLater(new Runnable() {
-								@Override
-								public void run() {
-									alfa -= fadeDec; // One fade degree
-									fadeDec += fadeDecInc;
-									if(alfa < 0.0f) {
-										// The panel is now cleared
-										alfa = 0.0f;
-										setCleared(true);
-									}
-									repaint();
+							SwingUtilities.invokeLater(() -> {
+								alfa -= fadeDec; // One fade degree
+								fadeDec += fadeDecInc;
+								if(alfa < 0.0f) {
+									// The panel is now cleared
+									alfa = 0.0f;
+									setCleared(true);
 								}
+								repaint();
 							});
 							Thread.sleep(fadePeriodMs);
 							timeLeft = delayMs - (System.currentTimeMillis() - ts);
@@ -190,12 +187,9 @@ public abstract class DjvFadingPane extends JPanel{
 	 * @return This object
 	 */
 	public DjvFadingPane start() {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				setVisible(false); // In case we are replacing some existing visible glass pane component
-				setVisible(true);
-			}
+		SwingUtilities.invokeLater(() -> {
+			setVisible(false); // In case we are replacing some existing visible glass pane component
+			setVisible(true);
 		});
 		return this;
 	}

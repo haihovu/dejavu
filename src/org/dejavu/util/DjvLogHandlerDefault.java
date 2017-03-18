@@ -44,7 +44,7 @@ public class DjvLogHandlerDefault implements DjvLogHandler, Runnable {
 	}
 
 	@Override
-	public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class origClass, String origMethod, String message) {
+	public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class<?> origClass, String origMethod, String message) {
 		return logMsg(new DjvLogMsg(category, severity, origClass, origMethod, message));
 	}
 
