@@ -95,6 +95,7 @@ public class AfxDomain {
 	 * FSM domain, or executed immediately by the calling thread.
 	 * @return True if the event had either been queued up, or already processed
 	 * (queued = false). False if the event cannot be dispatched for any reason.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
 	boolean dispatchEvent(FsmEvent event, boolean queued) throws InterruptedException {
 		return fsmDomain.dispatchEvent(event, queued);

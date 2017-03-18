@@ -29,6 +29,9 @@ public class AfxTcpTester {
 	private boolean done;
 	private final Set<AfxConnection> consumers = new HashSet<>();
 	
+	private static int writeCounter;
+	private static int readCounter;
+	
 	private class DataConsumer {
 		private final AfxEventHandler handler = new AfxEventAdaptor() {
 			@Override
@@ -41,6 +44,9 @@ public class AfxTcpTester {
 			@Override
 			public void readCompleted(ByteBuffer returnedBuffer) {
 				super.readCompleted(returnedBuffer);
+				synchronized(AfxTcpTester.class) {
+					++readCounter;
+				}
 				initiateRead();
 			}
 		};
@@ -106,6 +112,9 @@ public class AfxTcpTester {
 			@Override
 			public void writeCompleted() {
 				super.writeCompleted();
+				synchronized(AfxTcpTester.class) {
+					++writeCounter;
+				}
 				synchronized(DataProducer.this) {
 					if(--maxWrite > 0) {
 						initiateWrite();
@@ -176,6 +185,7 @@ public class AfxTcpTester {
 				if(--testerCount <=0) {
 					stopTest();
 				}
+				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, testerCount + " producer(s) left");
 			}
 		}
 	}
@@ -283,6 +293,9 @@ public class AfxTcpTester {
 		} finally {
 			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Closing acceptor");
 			acceptor.close();
+			synchronized(AfxTcpTester.class) {
+				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, writeCounter + " msgs written, " + readCounter + " msgs read");
+			}
 		}
 	}
 	public static void main(String[] args) {
@@ -300,6 +313,7 @@ public class AfxTcpTester {
 		}
 	}
 	static {
+		@SuppressWarnings("UnusedAssignment")
 		AfxDomain tmp = null;
 		try {
 			tmp = new AfxDomain("Tester");
