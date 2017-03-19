@@ -206,6 +206,7 @@ public class AfxTcpTester {
 		}
 		/**
 		 * Initiates the accept process
+		 * @return 
 		 */
 		private Acceptor accept() {
 			try {
