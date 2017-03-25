@@ -15,21 +15,25 @@ interface ReactorEventHandler {
 
 	/**
 	 * A connect event is detected by the reactor.
+	 * @throws java.lang.InterruptedException
 	 */
 	void onConnect() throws InterruptedException;
 
 	/**
 	 * A disconnect event is detected by the reactor.
+	 * @throws java.lang.InterruptedException
 	 */
 	void onDisconnect() throws InterruptedException;
 
 	/**
 	 * A read event is detected by the reactor.
+	 * @throws java.lang.InterruptedException
 	 */
 	void onRead() throws InterruptedException;
 
 	/**
 	 * A write event is detected by the reactor.
+	 * @throws java.lang.InterruptedException
 	 */
 	void onWrite() throws InterruptedException;
 
