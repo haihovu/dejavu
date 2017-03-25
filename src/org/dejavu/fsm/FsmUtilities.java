@@ -27,9 +27,8 @@ public class FsmUtilities {
 		synchronized (gStateIdMap) {
 			stateId = gStateIdMap.get(stateName);
 			if (null == stateId) {
-				int newCount = gStateIdCount++;
-				gStateIdMap.put(stateName, newCount);
-				return newCount;
+				stateId = gStateIdCount++;
+				gStateIdMap.put(stateName, stateId);
 			} else {
 				DjvSystem.logError(Category.DESIGN,	"State name collision of " + stateName
 					+ ". Your state machine will not likely work properly");

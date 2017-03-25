@@ -203,12 +203,10 @@ public class AfxUdpTester {
 	public static void main(String[] args) {
 		try {
 			DjvSystem.setLogLevel(2);
-			gDomain.start(10, 5);
+			gDomain.start(5);
 			AfxUdpTester tester = new AfxUdpTester();
 			tester.test();
 		} catch (InterruptedException ex) {
-		} catch (IOException ex) {
-			Logger.getLogger(AfxUdpTester.class.getName()).log(Level.SEVERE, null, ex);
 		} finally {
 			gDomain.stop();
 		}
@@ -216,8 +214,8 @@ public class AfxUdpTester {
 	static {
 		AfxDomain tmp = null;
 		try {
-			tmp = new AfxDomain("Tester");
-		} catch (FsmException ex) {
+			tmp = new AfxDomain("Tester", 10);
+		} catch (IOException|FsmException ex) {
 			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		}
 		gDomain = tmp;

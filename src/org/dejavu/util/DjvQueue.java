@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class DjvQueue {
 
 	private final ArrayBlockingQueue<Object> messageQueue;
-	private int queueSize = 1000;
+	private final int queueSize;
 
 	/**
 	 * Creates a new instance of DjvQueue

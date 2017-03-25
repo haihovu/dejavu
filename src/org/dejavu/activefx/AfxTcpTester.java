@@ -301,13 +301,11 @@ public class AfxTcpTester {
 	public static void main(String[] args) {
 		try {
 			DjvSystem.setLogLevel(2);
-			gDomain.start(1024, 5);
+			gDomain.start(5);
 			AfxTcpTester tester = new AfxTcpTester();
 			tester.test();
 			Thread.sleep(1000);
 		} catch (InterruptedException ex) {
-		} catch (IOException ex) {
-			Logger.getLogger(AfxTcpTester.class.getName()).log(Level.SEVERE, null, ex);
 		} finally {
 			gDomain.stop();
 		}
@@ -316,8 +314,8 @@ public class AfxTcpTester {
 		@SuppressWarnings("UnusedAssignment")
 		AfxDomain tmp = null;
 		try {
-			tmp = new AfxDomain("Tester");
-		} catch (FsmException ex) {
+			tmp = new AfxDomain("Tester", 1024);
+		} catch (IOException|FsmException ex) {
 			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 			System.exit(1);
 		}

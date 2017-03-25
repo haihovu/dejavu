@@ -22,6 +22,9 @@ public class FsmTransition {
 	 * take place (null if no guard is required)
 	 */
 	public FsmTransition(int triggerEventId, FsmState fromState, FsmState toState, FsmAction action, FsmAction guard) {
+		if(triggerEventId < 0) {
+			throw new RuntimeException("Invalid event ID " + triggerEventId + " must be positive integers");
+		}
 		eventId = triggerEventId;
 		this.action = action;
 		this.guard = guard;
@@ -59,7 +62,7 @@ public class FsmTransition {
 			return true;
 		} else {
 			DjvSystem.logWarning(Category.DESIGN,
-					"Failed the guard check");
+				"Failed the guard check");
 		}
 		return false;
 	}
