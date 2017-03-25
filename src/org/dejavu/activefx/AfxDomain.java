@@ -19,14 +19,11 @@ public class AfxDomain {
 	 * Creates a new instance of the Active FX engine.
 	 *
 	 * @param name The name of this instance.
-	 * @param maxChannels
 	 * @throws FsmException
-	 * @throws java.io.IOException
 	 */
-	public AfxDomain(String name, int maxChannels) throws FsmException, IOException {
-		m_FsmDomain = new AfxConnectionFsmDomain(name);
-		m_Name = name;
-		m_Reactor = new AfxReactor(m_Name, maxChannels);
+	public AfxDomain(String name) throws FsmException {
+		fsmDomain = new AfxConnectionFsmDomain(name);
+		this.name = name;
 	}
 
 	/**
@@ -40,9 +37,14 @@ public class AfxDomain {
 	 * valid range to denote default priority (same priority as calling thread).
 	 * @throws IOException
 	 */
-	public void start(int reactorThreadPriority) throws IOException {
-		m_FsmDomain.start(null, -1, null);
-		m_Reactor.start(reactorThreadPriority);
+	public void start(int maxChannels, int reactorThreadPriority) throws IOException {
+		fsmDomain.start(null, -1, null);
+		synchronized (this) {
+			if (null == reactor) {
+				reactor = new AfxReactor(name, maxChannels);
+				reactor.start(reactorThreadPriority);
+			}
+		}
 	}
 
 	/**
@@ -61,17 +63,27 @@ public class AfxDomain {
 	 * valid range to denote default priority (same priority as calling thread).
 	 * @throws IOException
 	 */
-	public void start(DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) throws IOException {
-		m_FsmDomain.start(watchdog, wdPeriod, failureResponse);
-		m_Reactor.start(reactorThreadPriority);
+	public void start(int maxChannels, DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) throws IOException {
+		fsmDomain.start(watchdog, wdPeriod, failureResponse);
+		synchronized (this) {
+			if (reactor == null) {
+				reactor = new AfxReactor(name, maxChannels);
+				reactor.start(reactorThreadPriority);
+			}
+		}
 	}
 
 	/**
 	 * Stops this Active FX engine.
 	 */
 	public void stop() {
-		m_Reactor.stop();
-		m_FsmDomain.stop();
+		synchronized (this) {
+			if (null != reactor) {
+				reactor.stop();
+				reactor = null;
+			}
+		}
+		fsmDomain.stop();
 	}
 
 	/**
@@ -83,9 +95,10 @@ public class AfxDomain {
 	 * FSM domain, or executed immediately by the calling thread.
 	 * @return True if the event had either been queued up, or already processed
 	 * (queued = false). False if the event cannot be dispatched for any reason.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
-	boolean dispatchEvent(FsmEvent event, boolean queued) {
-		return m_FsmDomain.dispatchEvent(event, queued);
+	boolean dispatchEvent(FsmEvent event, boolean queued) throws InterruptedException {
+		return fsmDomain.dispatchEvent(event, queued);
 	}
 
 	/**
@@ -95,7 +108,7 @@ public class AfxDomain {
 	 * @return The initial state for the Active FX FSM context.
 	 */
 	FsmState getInitialState() {
-		return m_FsmDomain.getInitialState();
+		return fsmDomain.getInitialState();
 	}
 
 	/**
@@ -105,7 +118,7 @@ public class AfxDomain {
 	 * @return The FSM domain for this engine, never null.
 	 */
 	FsmDomain getFsmDomain() {
-		return m_FsmDomain;
+		return fsmDomain;
 	}
 
 	/**
@@ -117,12 +130,12 @@ public class AfxDomain {
 	 * Basically a bit map of the different OP values in the class SelectionKey.
 	 */
 	int getInterestOps(ReactorEventHandler handler) {
-		AfxReactor reactor;
+		AfxReactor tsReactor;
 		synchronized (this) {
-			reactor = m_Reactor;
+			tsReactor = this.reactor;
 		}
-		if (reactor != null) {
-			return reactor.getInterestOpsFor(handler);
+		if (tsReactor != null) {
+			return tsReactor.getInterestOpsFor(handler);
 		} else {
 			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
 		}
@@ -138,12 +151,12 @@ public class AfxDomain {
 	 * a bit map of the different OP values in the class SelectionKey.
 	 */
 	int getReadyOps(ReactorEventHandler handler) {
-		AfxReactor reactor;
+		AfxReactor tsReactor;
 		synchronized (this) {
-			reactor = m_Reactor;
+			tsReactor = this.reactor;
 		}
-		if (reactor != null) {
-			return reactor.getReadyOpsFor(handler);
+		if (tsReactor != null) {
+			return tsReactor.getReadyOpsFor(handler);
 		} else {
 			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
 		}
@@ -159,12 +172,12 @@ public class AfxDomain {
 	 * the different OP values in the class SelectionKey.
 	 */
 	void registerHandler(ReactorEventHandler handler, int events) {
-		AfxReactor reactor;
+		AfxReactor tsReactor;
 		synchronized (this) {
-			reactor = m_Reactor;
+			tsReactor = this.reactor;
 		}
-		if (reactor != null) {
-			reactor.registerHandler(handler, events);
+		if (tsReactor != null) {
+			tsReactor.registerHandler(handler, events);
 		} else {
 			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
 		}
@@ -179,27 +192,27 @@ public class AfxDomain {
 	 * the different OP values in the class SelectionKey.
 	 */
 	void deregisterHandler(ReactorEventHandler handler, int events) {
-		AfxReactor reactor;
+		AfxReactor tsReactor;
 		synchronized (this) {
-			reactor = m_Reactor;
+			tsReactor = this.reactor;
 		}
-		if (reactor != null) {
-			reactor.deregisterHandler(handler, events);
+		if (tsReactor != null) {
+			tsReactor.deregisterHandler(handler, events);
 		}
 	}
 
 	/**
-	 * Removes a handler from the reactor.
+	 * Removes a handler from the reactor. Thread-safe.
 	 *
 	 * @param handler Handler to be removed.
 	 */
 	void removeHandler(ReactorEventHandler handler) {
-		AfxReactor reactor;
+		AfxReactor tsReactor;
 		synchronized (this) {
-			reactor = m_Reactor;
+			tsReactor = this.reactor;
 		}
-		if (reactor != null) {
-			reactor.removeHandler(handler);
+		if (tsReactor != null) {
+			tsReactor.removeHandler(handler);
 		}
 	}
 
@@ -207,12 +220,12 @@ public class AfxDomain {
 	 * @link aggregation
 	 * @supplierCardinality 1
 	 */
-	private final AfxReactor m_Reactor;
+	private AfxReactor reactor;
 
 	/**
 	 * @supplierCardinality 1
 	 * @link aggregation
 	 */
-	private final AfxConnectionFsmDomain m_FsmDomain;
-	private final String m_Name;
+	private final AfxConnectionFsmDomain fsmDomain;
+	private final String name;
 }

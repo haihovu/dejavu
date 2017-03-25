@@ -10,7 +10,6 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeMap;
 
 /**
  * Represents a single FSM domain. Each FSM domain has a single FSM dispatch
@@ -72,62 +71,53 @@ public abstract class FsmDomain implements Runnable {
 	 * @param failureResponse Optional watchdog failure response. I.e. what to
 	 * do if a failure of this FSM domain is detected.
 	 */
-	public synchronized void start(DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse) {
-		if (!m_Started) {
+	@SuppressWarnings("NestedSynchronizedStatement")
+	public synchronized void start(DjvWatchDog watchdog, int wdPeriod, final Runnable failureResponse) {
+		if (!started) {
 			if (null != watchdog) {
-				m_Watchdog = watchdog;
+				this.watchdog = watchdog;
 
 				// We don't register the given failure response with the watchdog.
 				// Instead an intermediate failure response is registered which
 				// generates a little more diagnostic info prior to invoking the
 				// client supplied response.
-				m_WdFailureResponse = failureResponse;
-				m_WdKey = m_Watchdog.registerComponent(getDomainName(), wdPeriod, new Runnable() {
-					@Override
-					public void run() {
-						// Dump the stack trace for the dispatching thread, this
-						// might provide some explanation as to why the watchdog
-						// failure might have occured.
-						Thread dispatchThread;
-						synchronized (FsmDomain.this) {
-							dispatchThread = m_DispatchingThread;// Thread safety
-						}
-
-						if (null != dispatchThread) {
-							StringBuilder traceMsg = new StringBuilder(256).append("Thread ");
-							traceMsg.append(dispatchThread.getName());
-							traceMsg.append(" may be stuck at: ");
-							StackTraceElement[] traces = dispatchThread.getStackTrace();
-							for (int i = 0; i < traces.length; ++i) {
-								if (i == 0) {
-									traceMsg.append(traces[i].toString());
-								} else {
-									traceMsg.append("->").append(traces[i].toString());
-								}
+				wdKey = this.watchdog.registerComponent(getDomainName(), wdPeriod, () -> {
+					// Dump the stack trace for the dispatching thread, this
+					// might provide some explanation as to why the watchdog
+					// failure might have occured.
+					Thread dispatchThread;
+					synchronized (FsmDomain.this) {
+						dispatchThread = dispatchingThread;// Thread safety
+					}
+					
+					if (null != dispatchThread) {
+						StringBuilder traceMsg = new StringBuilder(256).append("Thread ");
+						traceMsg.append(dispatchThread.getName());
+						traceMsg.append(" may be stuck at: ");
+						StackTraceElement[] traces = dispatchThread.getStackTrace();
+						for (int i = 0; i < traces.length; ++i) {
+							if (i == 0) {
+								traceMsg.append(traces[i].toString());
+							} else {
+								traceMsg.append("->").append(traces[i].toString());
 							}
-							DjvSystem.logWarning(Category.DESIGN, traceMsg.toString());
 						}
-
-						// And finally execute the response supplied by the client
-						// And do it in a thread-safe and dead-lock-safe manner.
-						Runnable clientResponse;
-						synchronized (FsmDomain.this) {
-							clientResponse = m_WdFailureResponse; // Thread-safety
-						}
-
-						if (null != clientResponse) {
-							clientResponse.run();
-						}
+						DjvSystem.logWarning(Category.DESIGN, traceMsg.toString());
+					}
+					
+					// And finally execute the response supplied by the client
+					if (null != failureResponse) {
+						failureResponse.run();
 					}
 				});
 
-				if (-1 < m_WdKey) {
+				if (-1 < wdKey) {
 					// We want to report the status a little faster than what is registered
 					int reportPeriod = (int) (wdPeriod * 0.75);
 					if (reportPeriod < 1) {
 						reportPeriod = 1;
 					}
-					m_WdStatEvtGen = new StatusEventGenerator(m_StatusEvent, reportPeriod);
+					wdStatEvtGen = new StatusEventGenerator(m_StatusEvent, reportPeriod);
 				}
 			}
 
@@ -136,9 +126,9 @@ public abstract class FsmDomain implements Runnable {
 			domThread.setPriority(Thread.currentThread().getPriority() + 2);
 			domThread.start();
 
-			m_DispatchingThread = domThread;
+			dispatchingThread = domThread;
 
-			m_Started = true;
+			started = true;
 		}
 	}
 
@@ -150,25 +140,25 @@ public abstract class FsmDomain implements Runnable {
 		DjvSystem.logInfo(Category.DESIGN, getDomainName() + " stop requested by user");
 		new Thread(() -> {
 			synchronized (FsmDomain.this) {
-				m_Running = false;
-				m_Started = false;
+				running = false;
+				started = false;
 				
-				if (null != m_WdStatEvtGen) {
-					m_WdStatEvtGen.dispose();
-					m_WdStatEvtGen = null;
+				if (null != wdStatEvtGen) {
+					wdStatEvtGen.dispose();
+					wdStatEvtGen = null;
 				}
 				
-				if (null != m_Watchdog) {
-					if (-1 < m_WdKey) {
-						m_Watchdog.deregisterComponent(m_WdKey);
-						m_WdKey = -1;
+				if (null != watchdog) {
+					if (-1 < wdKey) {
+						watchdog.deregisterComponent(wdKey);
+						wdKey = -1;
 					}
 					
-					m_Watchdog = null;
+					watchdog = null;
 				}
 				
-				if (m_DispatchingThread != null) {
-					m_DispatchingThread.interrupt();
+				if (dispatchingThread != null) {
+					dispatchingThread.interrupt();
 				}
 			}
 		}).start();
@@ -186,27 +176,24 @@ public abstract class FsmDomain implements Runnable {
 	 * processed by a background thread (true), or processed immediately using
 	 * the calling thread.
 	 * @return true if the event had been dispatched, false otherwise.
+	 * @throws java.lang.InterruptedException Interrupted by user.
 	 */
-	public boolean dispatchEvent(FsmEvent event, boolean queued) {
-		try {
-			if (queued) {
-				synchronized (this) {
-					if (m_DispatchingThread == null) {
-						DjvSystem.logWarning(Category.DESIGN, "FSM domain " + getDomainName()
-								+ " is already closed, event " + event + " ignored");
-						return false;
-					}
+	public boolean dispatchEvent(FsmEvent event, boolean queued) throws InterruptedException {
+		if (queued) {
+			synchronized (this) {
+				if (dispatchingThread == null) {
+					DjvSystem.logWarning(Category.DESIGN, "FSM domain " + getDomainName()
+							+ " is already closed, event " + event + " ignored");
+					return false;
 				}
-
-				if (m_EventQueue.sendMsg(event, 0)) {
-					return true;
-				}
-				DjvSystem.logWarning(Category.DESIGN, "Failed to send " + event);
-			} else {
-				return handleEvent(event);
 			}
-		} catch (InterruptedException e) {
-			DjvSystem.logError(Category.DESIGN, "Unexpected uninterrupted event");
+
+			if (eventQueue.sendMsg(event, 0)) {
+				return true;
+			}
+			DjvSystem.logWarning(Category.DESIGN, "Failed to send " + event);
+		} else {
+			return handleEvent(event);
 		}
 		return false;
 	}
@@ -217,7 +204,7 @@ public abstract class FsmDomain implements Runnable {
 	 * @return The initial state of FSM context in this domain
 	 */
 	public synchronized FsmState getInitialState() {
-		return m_InitialState;
+		return initialState;
 	}
 
 	/**
@@ -228,8 +215,8 @@ public abstract class FsmDomain implements Runnable {
 	 */
 	public FsmState locateState(int id) {
 		synchronized(this) {
-			if ((id > -1) && (id < m_StateMap.length)) {
-				return m_StateMap[id];
+			if ((id > -1) && (id < stateMap.length)) {
+				return stateMap[id];
 			}
 		}
 		return null;
@@ -237,34 +224,26 @@ public abstract class FsmDomain implements Runnable {
 
 	@Override
 	public void run() {
-		DjvSystem.logInfo(Category.DESIGN,
-				"Thread " + Thread.currentThread().getName() + " Started");
-
 		try {
-			m_Running = true;
+			running = true;
 			try {
-				while (m_Running) {
-					FsmEvent event = (FsmEvent) m_EventQueue.receiveMsg();
+				while (running) {
+					FsmEvent event = (FsmEvent) eventQueue.receiveMsg();
 					if (null != event) {
 						handleEvent(event);
 					}
 				}
 			} catch (RuntimeException e) {
 				DjvSystem.logError(Category.DESIGN,
-						Thread.currentThread() + " encountered " + DjvExceptionUtil.simpleTrace(e));
-			} catch (InterruptedException e) {
-				DjvSystem.logWarning(Category.DESIGN,
-						Thread.currentThread() + " interrupted");
+					Thread.currentThread() + " encountered " + DjvExceptionUtil.simpleTrace(e));
 			}
+		} catch (InterruptedException e) {
 		} finally {
 			synchronized (this) {
-				m_DispatchingThread = null;
+				dispatchingThread = null;
 				notifyAll();
 			}
 		}
-
-		DjvSystem.logInfo(Category.DESIGN,
-				"Thread " + Thread.currentThread().getName() + " Terminated");
 	}
 
 	/**
@@ -279,9 +258,8 @@ public abstract class FsmDomain implements Runnable {
 	 * @param action Optional action to execute before hitting the end state
 	 * @throws FsmException
 	 */
-	protected synchronized void addTransition(int eventId, FsmState fromState, FsmState toState, FsmAction guard, FsmAction action) throws FsmException {
-		FsmTransition newTransition = new FsmTransition(eventId, fromState, toState, action, guard);
-		m_TransitionMap.setTransition(newTransition);
+	protected final void addTransition(int eventId, FsmState fromState, FsmState toState, FsmAction guard, FsmAction action) throws FsmException {
+		transitionMap.setTransition(new FsmTransition(eventId, fromState, toState, action, guard));
 	}
 
 	/**
@@ -292,19 +270,19 @@ public abstract class FsmDomain implements Runnable {
 	 */
 	protected final synchronized void addState(FsmState newState, boolean initialState) {
 		if (initialState) {
-			if (null == m_InitialState) {
-				m_InitialState = newState;
+			if (null == this.initialState) {
+				this.initialState = newState;
 			} else {
 				DjvSystem.logWarning(Category.DESIGN,
-						"Attempting to set " + newState + " as initial state, but an initial state already exists: " + m_InitialState);
+					"Attempting to set " + newState + " as initial state, but an initial state already exists: " + this.initialState);
 			}
 		}
 
-		if (null == m_StateMap[newState.getId()]) {
-			m_StateMap[newState.getId()] = newState;
+		if (null == stateMap[newState.id]) {
+			stateMap[newState.id] = newState;
 		} else {
 			DjvSystem.logError(Category.DESIGN,
-					"Collision between existing " + m_StateMap[newState.getId()] + " and new " + newState);
+				"Collision between existing " + stateMap[newState.id] + " and new " + newState);
 		}
 	}
 
@@ -314,12 +292,13 @@ public abstract class FsmDomain implements Runnable {
 	 * @param event The event to be delivered.
 	 * @return True if the event had been successfully executed with the target
 	 * FSM context, false otherwise.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
-	protected boolean handleEvent(FsmEvent event) {
+	protected boolean handleEvent(FsmEvent event) throws InterruptedException {
 		if (event.getContext() != null) {
 			FsmState currState = event.getContext().getCurrentState();
 			if (null != currState) {
-				FsmTransition trans = m_TransitionMap.getTransition(currState, event.getId());
+				FsmTransition trans = transitionMap.getTransition(currState, event.getId());
 
 				if (null != trans) {
 					trans.execute(event);
@@ -339,20 +318,20 @@ public abstract class FsmDomain implements Runnable {
 
 			// Always thread-safe
 			synchronized (this) {
-				wd = m_Watchdog;
-				key = m_WdKey;
+				wd = watchdog;
+				key = wdKey;
 			}
 
 			if (wd != null) {
 				if (!wd.reportStatus(key, DjvWatchDog.Status.WD_NORMAL)) {
 					DjvSystem.logWarning(Category.DESIGN,
-							"Failed to report status to watchdog");
+						"Failed to report status to watchdog");
 				}
 			}
 		} else {
 			DjvSystem.logError(Category.DESIGN,
-					new StringBuilder("Event ").append(event.toString())
-							.append(" has NULL context").toString());
+				new StringBuilder("Event ").append(event.toString())
+					.append(" has NULL context").toString());
 		}
 
 		return false;
@@ -364,28 +343,28 @@ public abstract class FsmDomain implements Runnable {
 	 * @link aggregation
 	 * @supplierCardinality 0..*
 	 */
-	private final FsmState[] m_StateMap = new FsmState[2048];
+	private final FsmState[] stateMap = new FsmState[2048];
 
 	/** @link aggregation
 	 * @supplierCardinality 1 */
-	private final FsmTransitionTable m_TransitionMap = new FsmTransitionTable();
+	private final FsmTransitionTable transitionMap = new FsmTransitionTable();
 	/**
 	 * The main thread that drives (dispatching events) this FSM domain.
 	 */
 	@SuppressWarnings("ProtectedField")
-	protected Thread m_DispatchingThread;
+	protected Thread dispatchingThread;
 
 	/**
 	 * @label Initial state
 	 * @supplierCardinality 1
 	 */
-	private FsmState m_InitialState = null;
-	private volatile boolean m_Running;
+	private FsmState initialState = null;
+	private volatile boolean running;
 
 	/**
 	 * @supplierCardinality 1
 	 */
-	private final DjvQueue m_EventQueue = new DjvQueue(1000);
+	private final DjvQueue eventQueue = new DjvQueue(1000);
 	private static final AbstractMap<String, FsmDomain> gDomainMap = new HashMap<String, FsmDomain>();
 
 	/**
@@ -415,7 +394,7 @@ public abstract class FsmDomain implements Runnable {
 	 */
 	public boolean isStarted() {
 		synchronized (this) {
-			return m_Started;
+			return started;
 		}
 	}
 
@@ -451,22 +430,20 @@ public abstract class FsmDomain implements Runnable {
 
 		@Override
 		public void run() {
-			dispatchEvent(m_WdEvent, true);
+			try {
+				dispatchEvent(m_WdEvent, true);
+			} catch (InterruptedException ex) {
+			}
 		}
 	}
 
-	private DjvWatchDog m_Watchdog;
+	private DjvWatchDog watchdog;
 
-	private int m_WdKey = -1;
+	private int wdKey = -1;
 
-	private boolean m_Started;
+	private boolean started;
 
 	private final String m_Name;
 
-	private StatusEventGenerator m_WdStatEvtGen;
-
-	/**
-	 * Watchdog failure response specified by the client of this FSM domain.
-	 */
-	private Runnable m_WdFailureResponse;
+	private StatusEventGenerator wdStatEvtGen;
 }

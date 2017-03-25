@@ -222,7 +222,7 @@ public class DjvLanguage {
 	public static DjvLanguage parseLanguageLocale(String languageLocale) {
 		synchronized (DjvLanguage.class) {
 			for (int i = 0; i < gSupportedLanguageFreeIndex; ++i) {
-				DjvLanguage lang = s_g[i];
+				DjvLanguage lang = gSupportedLanguages[i];
 				if (lang.equals(languageLocale)) {
 					return lang;
 				}
@@ -242,7 +242,7 @@ public class DjvLanguage {
 		synchronized (DjvLanguage.class) {
 			DjvLanguage[] retValue = new DjvLanguage[gSupportedLanguageFreeIndex];
 			for (int i = 0; i < gSupportedLanguageFreeIndex; ++i) {
-				retValue[i] = s_g[i];
+				retValue[i] = gSupportedLanguages[i];
 			}
 			return retValue;
 		}
@@ -262,14 +262,14 @@ public class DjvLanguage {
 
 			boolean alreadyExisted = false;
 			for (int i = 0; i < gSupportedLanguageFreeIndex; ++i) {
-				if (s_g[i].getLanguageLocaleRFC3066().equals(newLang.getLanguageLocaleRFC3066())) {
+				if (gSupportedLanguages[i].getLanguageLocaleRFC3066().equals(newLang.getLanguageLocaleRFC3066())) {
 					alreadyExisted = true;
 					break;
 				}
 			}
 
-			if ((!alreadyExisted) && (gSupportedLanguageFreeIndex < s_g.length)) {
-				s_g[gSupportedLanguageFreeIndex++] = newLang;
+			if ((!alreadyExisted) && (gSupportedLanguageFreeIndex < gSupportedLanguages.length)) {
+				gSupportedLanguages[gSupportedLanguageFreeIndex++] = newLang;
 			}
 		}
 	}
@@ -295,7 +295,7 @@ public class DjvLanguage {
 
 		try {
 			StringBuilder fullString = new StringBuilder(64)
-					.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage").getString(lang.getLanguageCode()));
+				.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage").getString(lang.getLanguageCode()));
 
 			String locale = lang.getLocaleCode();
 			if ((null != locale) && (locale.length() > 0)) {
@@ -343,7 +343,7 @@ public class DjvLanguage {
 
 			// Retrieve the description ...
 			StringBuilder fullString = new StringBuilder(64)
-					.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage", localeSelection).getString(lang.getLanguageCode()));
+				.append(java.util.ResourceBundle.getBundle("org/dejavu/miutil/DjvLanguage", localeSelection).getString(lang.getLanguageCode()));
 
 			String locale = lang.getLocaleCode();
 			if ((null != locale) && (locale.length() > 0)) {
@@ -502,5 +502,5 @@ public class DjvLanguage {
 	/**
 	 * All supported languages
 	 */
-	private static final DjvLanguage[] s_g = new DjvLanguage[512];
+	private static final DjvLanguage[] gSupportedLanguages = new DjvLanguage[512];
 }

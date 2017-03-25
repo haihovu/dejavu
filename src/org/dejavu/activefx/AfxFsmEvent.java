@@ -95,6 +95,8 @@ class AfxFsmEvent implements FsmEvent {
 		this.id = id;
 		this.context = context;
 		channel = null;
+		ipPort = -1;
+		ipAddr = null;
 	}
 
 	/**
@@ -108,6 +110,27 @@ class AfxFsmEvent implements FsmEvent {
 		this.id = id;
 		this.cause = cause;
 		this.context = context;
+		channel = null;
+		ipPort = -1;
+		ipAddr = null;
+	}
+
+	/**
+	 * Creates a new AfxFsmEvent, for use with open requests.
+	 *
+	 * @param id The event ID
+	 * @param context The FSM context to receive this event
+	 * @param ipPort The IP port of the remote endpoint with which to inititate
+	 * the connection
+	 * @param handler The interface to the callback object for receiving
+	 * connection events.
+	 */
+	AfxFsmEvent(int id, FsmContext context, int ipPort, AfxEventHandler handler) {
+		this.id = id;
+		this.context = context;
+		this.ipAddr = null;
+		this.ipPort = ipPort;
+		eventHandler = handler;
 		channel = null;
 	}
 
@@ -147,6 +170,8 @@ class AfxFsmEvent implements FsmEvent {
 		this.buffer = buffer;
 		eventHandler = handler;
 		channel = null;
+		ipPort = -1;
+		ipAddr = null;
 	}
 
 	/**
@@ -163,16 +188,8 @@ class AfxFsmEvent implements FsmEvent {
 		this.context = context;
 		this.channel = channel;
 		eventHandler = handler;
-	}
-
-	@Override
-	public FsmContext getContext() {
-		return context;
-	}
-
-	@Override
-	public int getId() {
-		return id;
+		ipPort = -1;
+		ipAddr = null;
 	}
 
 	/**
@@ -198,17 +215,6 @@ class AfxFsmEvent implements FsmEvent {
 	}
 
 	/**
-	 * Retrieves the <I>Channel</I> attribute. This attribute is set once in one
-	 * of the constructors.
-	 *
-	 * @return The I/O channel representing the <I>Channel</I> attribute, null
-	 * if not set.
-	 */
-	public SelectableChannel getChannel() {
-		return channel;
-	}
-
-	/**
 	 * Retrieves the <I>Event Handler</I> attribute. This attribute is set once
 	 * in one of the constructors.
 	 *
@@ -219,32 +225,10 @@ class AfxFsmEvent implements FsmEvent {
 		return eventHandler;
 	}
 
-	/**
-	 * Retrieves the <I>IP Address</I> attribute. This attribute is set once in
-	 * one of the constructors.
-	 *
-	 * @return The string representing the <I>IP Address</I> attribute, null if
-	 * not set.
-	 */
-	public String getIpAddr() {
-		return ipAddr;
-	}
-
-	/**
-	 * Retrieves the <I>IP Port</I> attribute. This attribute is set once in one
-	 * of the constructors.
-	 *
-	 * @return The integer representing the <I>IP Port</I> attribute, null if
-	 * not set.
-	 */
-	public int getIpPort() {
-		return ipPort;
-	}
-
 	@Override
 	public String toString() {
 		StringBuilder retValue = new StringBuilder(64);
-		switch (getId()) {
+		switch (id) {
 			case OPEN:
 				retValue.append("OPEN");
 				break;
@@ -291,19 +275,30 @@ class AfxFsmEvent implements FsmEvent {
 		return retValue.append(".").append(ipAddr).append(":").append(ipPort).toString();
 	}
 
+	@Override
+	public FsmContext getContext() {
+		return context;
+	}
+
+	@Override
+	public int getId() {
+		return id;
+	}
+
 	/**
 	 * @supplierCardinality 1
 	 */
-	private final FsmContext context;
-	private ByteBuffer buffer = null;
-	private final int id;
-	private final SelectableChannel channel;
+	public final FsmContext context;
+	public final SelectableChannel channel;
+	public final int id;
+	public final String ipAddr;
+	public final int ipPort;
+	
 	private String cause;
+	private ByteBuffer buffer = null;
 
 	/**
 	 * @supplierCardinality 1
 	 */
 	private AfxEventHandler eventHandler = null;
-	private String ipAddr;
-	private int ipPort;
 }

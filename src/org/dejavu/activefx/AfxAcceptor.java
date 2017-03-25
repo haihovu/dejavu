@@ -39,12 +39,12 @@ public class AfxAcceptor {
 	 * @throws java.io.IOException Failed to open listening socket
 	 */
 	public synchronized void open(String ipAddr, int ipPort, AfxEventHandler eventHandler) throws IOException {
-		if (currentState == ACCEPTOR_STATE_CLOSED) {
+		if (currentState == State.ACCEPTOR_STATE_CLOSED) {
 			channel = ServerSocketChannel.open();
 			channel.configureBlocking(false);
 			channel.socket().bind(new InetSocketAddress(ipPort));  // EB: changed from: ( ipAddr, ipPort) since it is local anyway
 			this.eventHandler = eventHandler;
-			currentState = ACCEPTOR_STATE_IDLE;
+			currentState = State.ACCEPTOR_STATE_IDLE;
 		}
 	}
 
@@ -53,10 +53,10 @@ public class AfxAcceptor {
 	 */
 	public synchronized void close() {
 		try {
-			if (currentState != ACCEPTOR_STATE_CLOSED) {
+			if (currentState != State.ACCEPTOR_STATE_CLOSED) {
 				domain.deregisterHandler(acceptEventHandler, SelectionKey.OP_ACCEPT);
 				channel.close();
-				currentState = ACCEPTOR_STATE_CLOSED;
+				currentState = State.ACCEPTOR_STATE_CLOSED;
 				eventHandler = null;
 			}
 		} catch (IOException e) {
@@ -71,27 +71,26 @@ public class AfxAcceptor {
 	 * asynchronously, as they come in, via the event handler given in the open
 	 * command.
 	 *
-	 * @return True if the accept handled had been successfully registered,
-	 * we're now listening for accept events, or false means the accept handler
-	 * was not registered.
+	 * @throws org.dejavu.activefx.AfxException
 	 */
-	public synchronized boolean accept() {
+	public synchronized void accept() throws AfxException {
 		try {
-			if (currentState == ACCEPTOR_STATE_IDLE) {
-				currentState = ACCEPTOR_STATE_ACCEPTING;
+			if (currentState == State.ACCEPTOR_STATE_IDLE) {
+				currentState = State.ACCEPTOR_STATE_ACCEPTING;
 				domain.registerHandler(acceptEventHandler, java.nio.channels.SelectionKey.OP_ACCEPT);
-				return true;
+			}else {
+				throw new AfxException("Acceptor in wrong state " + currentState);
 			}
-			throw new RuntimeException("Acceptor in wrong state " + currentState);
 		} catch (RuntimeException e) {
-			DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
+			throw new AfxException("Accept Failed", e);
 		}
-		return false;
 	}
 
-	private static final int ACCEPTOR_STATE_CLOSED = 1;
-	private static final int ACCEPTOR_STATE_IDLE = 2;
-	private static final int ACCEPTOR_STATE_ACCEPTING = 3;
+	public static enum State {
+		ACCEPTOR_STATE_CLOSED,
+		ACCEPTOR_STATE_IDLE,
+		ACCEPTOR_STATE_ACCEPTING
+	}
 
 	private ServerSocketChannel channel;
 
@@ -107,7 +106,7 @@ public class AfxAcceptor {
 	/**
 	 * Simple state machine.
 	 */
-	private volatile int currentState = ACCEPTOR_STATE_CLOSED;
+	private volatile State currentState = State.ACCEPTOR_STATE_CLOSED;
 	private final AcceptEventHandler acceptEventHandler = new AcceptEventHandler();
 
 	/**
@@ -149,14 +148,15 @@ public class AfxAcceptor {
 			synchronized (AfxAcceptor.this) {
 				// Set the state before executing the callback
 				handler = eventHandler;
-				currentState = ACCEPTOR_STATE_IDLE;
+				currentState = State.ACCEPTOR_STATE_IDLE;
 				localChannel = channel;
 			}
 
 			try {
 				// Only accept TCP connection for now
 				SocketChannel newChannel = localChannel != null ? localChannel.accept() : null;
-				domain.deregisterHandler(this, java.nio.channels.SelectionKey.OP_ACCEPT);
+				// Why?
+				//domain.deregisterHandler(this, java.nio.channels.SelectionKey.OP_ACCEPT);
 				if (null != newChannel) {
 					newChannel.configureBlocking(false);
 					Socket sock = newChannel.socket();

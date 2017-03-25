@@ -12,27 +12,27 @@ import java.util.Map;
  */
 public class FsmUtilities {
 
-	private final static Map<String, Integer> m_StateIdMap = new HashMap<>();
-	private static int m_StateIdCount = 0;
+	private final static Map<String, Integer> gStateIdMap = new HashMap<>();
+	private static int gStateIdCount = 0;
 	static final int INVALID_STATE_ID = -1;
 
 	/**
-	 * Given a state name, returns a unique ID.
+	 * Given a new state name, returns a unique ID.
 	 *
 	 * @param stateName The name of the desired state.
 	 * @return The ID of the desired state.
 	 */
 	public static int registerState(String stateName) {
 		Integer stateId;
-		synchronized (m_StateIdMap) {
-			stateId = m_StateIdMap.get(stateName);
+		synchronized (gStateIdMap) {
+			stateId = gStateIdMap.get(stateName);
 			if (null == stateId) {
-				int newCount = m_StateIdCount++;
-				m_StateIdMap.put(stateName, newCount);
+				int newCount = gStateIdCount++;
+				gStateIdMap.put(stateName, newCount);
 				return newCount;
 			} else {
-				DjvSystem.logWarning(Category.DESIGN,
-						"State name collision of " + stateName);
+				DjvSystem.logError(Category.DESIGN,	"State name collision of " + stateName
+					+ ". Your state machine will not likely work properly");
 			}
 		}
 		return stateId;

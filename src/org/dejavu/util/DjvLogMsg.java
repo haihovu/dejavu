@@ -58,7 +58,7 @@ public class DjvLogMsg {
 	 * message.
 	 * @param msg The log message.
 	 */
-	protected DjvLogMsg(long index, long timestamp, Category cat, int severity, Class orig, String method, String msg) {
+	protected DjvLogMsg(long index, long timestamp, Category cat, int severity, Class<?> orig, String method, String msg) {
 		cat.getClass(); // Null check
 		this.index = index;
 		this.timestamp = timestamp;
@@ -117,7 +117,7 @@ public class DjvLogMsg {
 	 * message.
 	 * @param msg The log message.
 	 */
-	protected DjvLogMsg(long index, Category cat, int severity, Class orig, String method, String msg) {
+	protected DjvLogMsg(long index, Category cat, int severity, Class<?> orig, String method, String msg) {
 		this(index, System.currentTimeMillis(), cat, severity, orig, method, msg);
 	}
 
@@ -137,7 +137,7 @@ public class DjvLogMsg {
 	 * message.
 	 * @param msg The log message.
 	 */
-	public DjvLogMsg(Category cat, int severity, Class orig, String method, String msg) {
+	public DjvLogMsg(Category cat, int severity, Class<?> orig, String method, String msg) {
 		this(incrementIndex(), cat, severity, orig, method, msg);
 	}
 
@@ -239,7 +239,7 @@ public class DjvLogMsg {
 	 */
 	public final int severity;
 
-	public final Class originatorClass;
+	public final Class<?> originatorClass;
 
 	public final String originatorClassName;
 

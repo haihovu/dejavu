@@ -60,7 +60,7 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	}
 
 	@Override
-	public synchronized void onWrite() {
+	public synchronized void onWrite() throws InterruptedException {
 		if (!reactorWriteEnabled || channel == null) {
 			// This does happen from time to time
 			return;
@@ -101,25 +101,22 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 
 				disableReactorWrite();
 			}
-		} catch (Exception e) {
+		} catch (IOException e) {
 			DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
 
-			try {
-				// Write failed, don't need write event any more ...
-				disableReactorWrite();
+			// Write failed, don't need write event any more ...
+			disableReactorWrite();
 
-				// ... null out the write buffer ...
-				m_WriteBuffer = null;
+			// ... null out the write buffer ...
+			m_WriteBuffer = null;
 
-				// ... And trigger the transition on event FAILURE
-				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
-			} catch (Exception e2) {
-			}
+			// ... And trigger the transition on event FAILURE
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.WRITE_FAILURE, this), true);
 		}
 	}
 
 	@Override
-	public synchronized void onConnect() {
+	public synchronized void onConnect() throws InterruptedException {
 		String cause;
 
 		if (channel == null) {
@@ -167,12 +164,12 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	}
 
 	@Override
-	public synchronized void onDisconnect() {
+	public synchronized void onDisconnect() throws InterruptedException {
 		domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE, this), false);
 	}
 
 	@Override
-	public synchronized void onRead() {
+	public synchronized void onRead() throws InterruptedException {
 		try {
 			if ((readBuffer != null) && (readBuffer.hasRemaining())) {
 				if (null != channel) {
@@ -205,7 +202,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public int getReceiveBufferSize() {
 		try {
-			return channel.socket().getReceiveBufferSize();
+			synchronized(this) {
+				if(channel != null) {
+					return channel.socket().getReceiveBufferSize();
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -217,7 +218,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public int getSendBufferSize() {
 		try {
-			return channel.socket().getSendBufferSize();
+			synchronized(this) {
+				if(channel != null) {
+					return channel.socket().getSendBufferSize();
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -229,7 +234,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public void setReceiveBufferSize(int newSize) {
 		try {
-			channel.socket().setReceiveBufferSize(newSize);
+			synchronized(this) {
+				if(channel != null) {
+					channel.socket().setReceiveBufferSize(newSize);
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -240,7 +249,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public void setSendBufferSize(int newSize) {
 		try {
-			channel.socket().setSendBufferSize(newSize);
+			synchronized(this) {
+				if(channel != null) {
+					channel.socket().setSendBufferSize(newSize);
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -250,16 +263,20 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 
 	@Override
 	public SelectableChannel getHandle() {
-		return channel;
+		synchronized(this) {
+			return channel;
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "{channel:" + (channel != null ? channel.toString() : "null") + ", currentState:" + getCurrentState() + ", currentInterest:" + domain.getInterestOps(this) + ", currentReady:" + domain.getReadyOps(this) + ", numMsgsWritten:" + numMsgsWrittenForThisChannel + "}";
+		synchronized(this) {
+			return "{channel:" + (channel != null ? channel.toString() : "null") + ", currentState:" + getCurrentState() + ", currentInterest:" + domain.getInterestOps(this) + ", currentReady:" + domain.getReadyOps(this) + ", numMsgsWritten:" + numMsgsWrittenForThisChannel + "}";
+		}
 	}
 
 	@Override
-	public void handleHandshake(FsmEvent evt) {
+	public void handleHandshake(FsmEvent evt) throws InterruptedException {
 		DjvSystem.logInfo(Category.DESIGN, "Don't handle this event in this class");
 	}
 
@@ -270,7 +287,7 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 
 	@Override
 	@SuppressWarnings("NestedAssignment")
-	public synchronized void initiateOpen(FsmEvent evt) {
+	public synchronized void initiateOpen(FsmEvent evt) throws InterruptedException {
 		AfxFsmEvent afxEvent = (AfxFsmEvent) evt;
 		try {
 			connectionventHandler = afxEvent.getEventHandler();
@@ -280,12 +297,12 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 				channel.close();
 			}
 
-			if (null == (channel = (SocketChannel) afxEvent.getChannel())) {
+			if (null == (channel = (SocketChannel) afxEvent.channel)) {
 				channel = SocketChannel.open();
 
 				channel.configureBlocking(false);
 
-				if (channel.connect(new java.net.InetSocketAddress(afxEvent.getIpAddr(), afxEvent.getIpPort()))) {
+				if (channel.connect(new java.net.InetSocketAddress(afxEvent.ipAddr, afxEvent.ipPort))) {
 					DjvSystem.logWarning(Category.DESIGN, "Unexpected non-blocking connect returning true");
 				}
 			} else {
@@ -294,18 +311,15 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 
 			// Tells reactor to notify of connect events
 			domain.registerHandler(this, SelectionKey.OP_CONNECT);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
-			try {
-				domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE,
-						this, e.getMessage()), true);
-			} catch (Exception e2) {
-			}
+			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.OPEN_FAILURE,
+				this, e.getMessage()), true);
 		}
 	}
 
 	@Override
-	public synchronized void initiateClose(FsmEvent evt) {
+	public synchronized void initiateClose(FsmEvent evt) throws InterruptedException {
 		if (domain == null) {
 			return;
 		}
@@ -314,10 +328,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 		if (channel != null) {
 			try {
 				channel.close();
-			} catch (Exception e) {
+			} catch (IOException e) {
 				DjvSystem.logError(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));
+			} finally {
+				channel = null;
 			}
-			channel = null;
 
 			domain.dispatchEvent(new AfxFsmEvent(AfxFsmEvent.CLOSE_COMPLETE, this), true);
 
@@ -328,7 +343,7 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	}
 
 	@Override
-	public void initiateRead(FsmEvent evt) {
+	public void initiateRead(FsmEvent evt) throws InterruptedException{
 		// Tells the reactor to notify me of read events
 		enableReactorRead();
 	}
@@ -343,12 +358,12 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	}
 
 	@Override
-	public synchronized void initiateConnect(FsmEvent evt) {
+	public synchronized void initiateConnect(FsmEvent evt) throws InterruptedException {
 		AfxFsmEvent afxEvent = (AfxFsmEvent) evt;
 		if (connectionventHandler == null) {
 			connectionventHandler = afxEvent.getEventHandler();
 		}
-		SelectableChannel chan = afxEvent.getChannel();
+		SelectableChannel chan = afxEvent.channel;
 		if (chan instanceof SocketChannel) {
 			channel = (SocketChannel) chan;
 			if (channel.isConnected()) {
@@ -356,6 +371,8 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 			} else {
 				enableReactorConnect();
 			}
+		} else {
+			DjvSystem.logError(Category.DESIGN, "Wrong channel type " + chan + " connection probably pooched");
 		}
 	}
 

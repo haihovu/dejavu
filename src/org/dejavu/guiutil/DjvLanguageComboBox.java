@@ -17,7 +17,7 @@ import javax.swing.JComboBox;
  * using their full descriptions, in their local language settings.
  * @author haiv
  */
-public class DjvLanguageComboBox extends JComboBox
+public class DjvLanguageComboBox extends JComboBox<String>
 {
 	private static final long serialVersionUID = 1L;
 
@@ -71,7 +71,7 @@ public class DjvLanguageComboBox extends JComboBox
 	 * Sets the selected language.
 	 * @param language The language to be selected.
 	 */
-	public void setSelectedLanguage(DjvLanguage language)
+	public final void setSelectedLanguage(DjvLanguage language)
 	{
 		setSelectedItem(DjvLanguage.getFullDescription(language));
 	}
