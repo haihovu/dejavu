@@ -40,11 +40,16 @@ public class FsmTransitionTable {
 	public void setTransition(FsmTransition newTransition) throws FsmException {
 		TransitionMap transitionMap;
 		synchronized (stateTransitionMap) {
-			transitionMap = stateTransitionMap[newTransition.fromState.id];
-			if (null == transitionMap) {
-				// The desired state was not in the map, add a new entry for it and retry
-				transitionMap = new TransitionMap();
-				stateTransitionMap[newTransition.fromState.id] = transitionMap;
+			int fromId = newTransition.fromState.id;
+			if(fromId < stateTransitionMap.length) {
+				transitionMap = stateTransitionMap[fromId];
+				if (null == transitionMap) {
+					// The desired state was not in the map, add a new entry for it and retry
+					transitionMap = new TransitionMap();
+					stateTransitionMap[fromId] = transitionMap;
+				}
+			} else {
+				throw new FsmException("Invalid transition " + newTransition + ". From state ID is too large");
 			}
 		}
 		// Found the state-event table for the desired state

@@ -278,8 +278,8 @@ public class AfxTcpTester {
 		List<Acceptor> acceptors = new LinkedList<>();
 		try {
 			for(int port : ports) {
-				AfxDomain domain = new AfxDomain("Test" + port);
-				domain.start(512, 5);
+				AfxDomain domain = new AfxDomain("Test" + port, 512);
+				domain.start(5);
 				synchronized(gDomain) {
 					gDomain.put(port, domain);
 				}
