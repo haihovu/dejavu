@@ -3,6 +3,8 @@ package org.dejavu.activefx;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
+import org.dejavu.util.DjvLogMsg;
+import org.dejavu.util.DjvSystem;
 
 /**
  * The interface for handling Active FX events. Typically used by Active FX
@@ -14,12 +16,16 @@ public interface AfxEventHandler {
 	 * The Active FX connection had been open, and is ready for read/write
 	 * request.
 	 */
-	void openCompleted();
+	default void openCompleted() {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Open completed " + this);
+	}
 
 	/**
 	 * The Active FX connection is now closed.
 	 */
-	void closed();
+	default void closed() {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Closed " + this);
+	}
 
 	/**
 	 * The previous read request is now completed, the supplied buffer is filled
@@ -28,12 +34,16 @@ public interface AfxEventHandler {
 	 * @param returnedBuffer The buffer given to the read command, which now
 	 * contains the input data.
 	 */
-	void readCompleted(ByteBuffer returnedBuffer);
+	default void readCompleted(ByteBuffer returnedBuffer) {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Read completed " + this);
+	}
 
 	/**
 	 * The previous write request is completed.
 	 */
-	void writeCompleted();
+	default void writeCompleted() {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "Write completed " + this);
+	}
 
 	/**
 	 * A new Active FX connection had been accepted and created.
@@ -41,7 +51,9 @@ public interface AfxEventHandler {
 	 * @param newConnection The new Active FX connection.
 	 * @todo See if we could trim down to only one acceptCompleted.
 	 */
-	void acceptCompleted(AfxConnection newConnection);
+	default void acceptCompleted(AfxConnection newConnection) {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, this + " accept completed " + newConnection);
+	}
 
 	/**
 	 * A new channel had been accepted
@@ -49,22 +61,30 @@ public interface AfxEventHandler {
 	 * @param newChannel The new SelectableChannel (i.e. SocketChannel)
 	 * @todo See if we could trim down to only one acceptCompleted.
 	 */
-	void acceptCompleted(SelectableChannel newChannel);
+	default void acceptCompleted(SelectableChannel newChannel) {
+		DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, this + " accept completed " + newChannel);
+	}
 
 	/**
 	 * The previous open request failed.
 	 *
 	 * @param theCause Arbitrary cause of the failure
 	 */
-	void openFailed(String theCause);
+	default void openFailed(String theCause) {
+		DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, this + " open failed " + theCause);
+	}
 
 	/**
 	 * The previous read request had failed.
 	 */
-	void readFailed();
+	default void readFailed() {
+		DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Read failed " + this);
+	}
 
 	/**
 	 * The previous write request had failed.
 	 */
-	void writeFailed();
+	default void writeFailed() {
+		DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Write failed " + this);
+	}
 }

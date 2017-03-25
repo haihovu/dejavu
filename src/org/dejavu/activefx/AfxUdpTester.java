@@ -8,8 +8,6 @@ package org.dejavu.activefx;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.dejavu.fsm.FsmException;
 import org.dejavu.util.DjvBackgroundTask;
 import org.dejavu.util.DjvExceptionUtil;
@@ -29,12 +27,12 @@ public class AfxUdpTester {
 	private boolean done;
 	
 	private class DataConsumer {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void readCompleted(ByteBuffer returnedBuffer) {
 				new Thread(() -> {
 					try {
-						super.readCompleted(returnedBuffer);
+						AfxEventHandler.super.readCompleted(returnedBuffer);
 						byte[] returnData = returnedBuffer.array();
 						synchronized(data) {
 							for(int i = 0; i <  returnData.length; ++i) {
@@ -68,16 +66,16 @@ public class AfxUdpTester {
 	}
 	
 	private class DataProducer extends DjvBackgroundTask {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void closed() {
-				super.closed();
+				AfxEventHandler.super.closed();
 				stop();
 			}
 			
 			@Override
 			public void writeCompleted() {
-				super.writeCompleted();
+				AfxEventHandler.super.writeCompleted();
 				synchronized(AfxUdpTester.this) {
 					dataReady = true;
 				}
@@ -155,22 +153,22 @@ public class AfxUdpTester {
 	@SuppressWarnings("SleepWhileInLoop")
 	void test() throws InterruptedException {
 		try {
-			receivor.open(12344, new AfxEventAdaptor(){
+			receivor.open(12344, new AfxEventHandler() {
 				@Override
 				public void closed() {
-					super.closed(); 
+					AfxEventHandler.super.closed(); 
 					stopTest();
 				}
 
 				@Override
 				public void openCompleted() {
-					super.openCompleted();
+					AfxEventHandler.super.openCompleted();
 					try {
 						new DataConsumer(receivor).initiateRead();
-						connector.connect(new InetSocketAddress("127.0.0.1", 12344), new AfxEventAdaptor(){
+						connector.connect(new InetSocketAddress("127.0.0.1", 12344), new AfxEventHandler(){
 							@Override
 							public void openCompleted() {
-								super.openCompleted();
+								AfxEventHandler.super.openCompleted();
 								new DataProducer(connector, 2048).start();
 							}
 						});

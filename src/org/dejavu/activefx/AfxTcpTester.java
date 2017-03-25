@@ -34,17 +34,17 @@ public class AfxTcpTester {
 	private static int readCounter;
 	
 	private class DataConsumer {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void readFailed() {
-				super.readFailed(); 
+				AfxEventHandler.super.readFailed(); 
 				connection.close();
 				done();
 			}
 
 			@Override
 			public void readCompleted(ByteBuffer returnedBuffer) {
-				super.readCompleted(returnedBuffer);
+				AfxEventHandler.super.readCompleted(returnedBuffer);
 				synchronized(AfxTcpTester.class) {
 					++readCounter;
 				}
@@ -98,10 +98,10 @@ public class AfxTcpTester {
 	}
 	
 	private class DataProducer extends DjvBackgroundTask {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void closed() {
-				super.closed();
+				AfxEventHandler.super.closed();
 				stop();
 			}
 
@@ -112,7 +112,7 @@ public class AfxTcpTester {
 			
 			@Override
 			public void writeCompleted() {
-				super.writeCompleted();
+				AfxEventHandler.super.writeCompleted();
 				synchronized(AfxTcpTester.class) {
 					++writeCounter;
 				}
@@ -194,14 +194,14 @@ public class AfxTcpTester {
 	/**
 	 * Acceptor class
 	 */
-	private class Acceptor extends AfxEventAdaptor {
+	private class Acceptor implements AfxEventHandler {
 		private final int port;
 		private final AfxAcceptor acceptor;
 		private final AfxDomain domain;
-		Acceptor(int port, AfxDomain domain) {
+		Acceptor(int port, AfxDomain domain) throws IOException {
 			super();
 			this.port = port;
-			this.acceptor = new AfxAcceptor(domain);
+			this.acceptor = new AfxAcceptor(domain, this);
 			this.domain = domain;
 		}
 		/**
@@ -210,7 +210,7 @@ public class AfxTcpTester {
 		 */
 		private Acceptor accept() {
 			try {
-				acceptor.open("127.0.0.1", port, this);
+				acceptor.open("127.0.0.1", port);
 				acceptor.accept();
 			} catch (AfxException|IOException ex) {
 				DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
@@ -227,16 +227,16 @@ public class AfxTcpTester {
 
 		@Override
 		public void acceptCompleted(AfxConnection newConnection) {
-			super.acceptCompleted(newConnection);
+			AfxEventHandler.super.acceptCompleted(newConnection);
 			new DataConsumer(newConnection).initiateRead();
 		}
 
 		@Override
 		public void acceptCompleted(SelectableChannel newChannel) {
-			super.acceptCompleted(newChannel);
+			AfxEventHandler.super.acceptCompleted(newChannel);
 			try {
 				AfxConnectionTcp tcp = new AfxConnectionTcp(domain);
-				tcp.connect(newChannel, new AfxEventAdaptor(){
+				tcp.connect(newChannel, new AfxEventHandler(){
 					@Override
 					public void openCompleted() {
 						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, tcp + " opened, start reading");
@@ -287,10 +287,10 @@ public class AfxTcpTester {
 				try {
 					for(int i = 0; i < 64; ++i) {
 						AfxConnection connector = new AfxConnectionTcp(domain);
-						connector.open("127.0.0.1", port, new AfxEventAdaptor(){
+						connector.open("127.0.0.1", port, new AfxEventHandler() {
 							@Override
 							public void openCompleted() {
-								super.openCompleted();
+								AfxEventHandler.super.openCompleted();
 								new DataProducer(connector, 256).start();
 							}
 							@Override
@@ -317,7 +317,7 @@ public class AfxTcpTester {
 				}
 			}
 			// The producers are probably completed, give the consumers sometime to complete
-			Thread.sleep(60000);
+			Thread.sleep(40000);
 		} finally {
 			acceptors.forEach((acceptor) -> {
 				acceptor.close();
