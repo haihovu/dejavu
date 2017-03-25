@@ -13,7 +13,7 @@ public class FsmTransition {
 	/**
 	 * Initialization constructor.
 	 *
-	 * @param triggerEventId The event that triggers the transition
+	 * @param triggerEventId The event that triggers the transition. Must be positive integer values.
 	 * @param fromState The begin state from which the transition is to occur
 	 * @param toState The end state to which the transition will take place
 	 * @param action The optional action to execute during the state transition

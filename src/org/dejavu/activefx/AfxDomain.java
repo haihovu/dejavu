@@ -19,11 +19,14 @@ public class AfxDomain {
 	 * Creates a new instance of the Active FX engine.
 	 *
 	 * @param name The name of this instance.
+	 * @param maxChannels
 	 * @throws FsmException
+	 * @throws java.io.IOException
 	 */
-	public AfxDomain(String name) throws FsmException {
+	public AfxDomain(String name, int maxChannels) throws FsmException, IOException {
 		m_FsmDomain = new AfxConnectionFsmDomain(name);
 		m_Name = name;
+		m_Reactor = new AfxReactor(m_Name, maxChannels);
 	}
 
 	/**
@@ -37,14 +40,9 @@ public class AfxDomain {
 	 * valid range to denote default priority (same priority as calling thread).
 	 * @throws IOException
 	 */
-	public void start(int maxChannels, int reactorThreadPriority) throws IOException {
+	public void start(int reactorThreadPriority) throws IOException {
 		m_FsmDomain.start(null, -1, null);
-		synchronized (this) {
-			if (null == m_Reactor) {
-				m_Reactor = new AfxReactor(m_Name, maxChannels);
-				m_Reactor.start(reactorThreadPriority);
-			}
-		}
+		m_Reactor.start(reactorThreadPriority);
 	}
 
 	/**
@@ -63,27 +61,17 @@ public class AfxDomain {
 	 * valid range to denote default priority (same priority as calling thread).
 	 * @throws IOException
 	 */
-	public void start(int maxChannels, DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) throws IOException {
+	public void start(DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) throws IOException {
 		m_FsmDomain.start(watchdog, wdPeriod, failureResponse);
-		synchronized (this) {
-			if (m_Reactor == null) {
-				m_Reactor = new AfxReactor(m_Name, maxChannels);
-				m_Reactor.start(reactorThreadPriority);
-			}
-		}
+		m_Reactor.start(reactorThreadPriority);
 	}
 
 	/**
 	 * Stops this Active FX engine.
 	 */
 	public void stop() {
-		synchronized (this) {
-			if (null != m_Reactor) {
-				m_Reactor.stop();
-				m_Reactor = null;
-			}
-			m_FsmDomain.stop();
-		}
+		m_Reactor.stop();
+		m_FsmDomain.stop();
 	}
 
 	/**
@@ -219,7 +207,7 @@ public class AfxDomain {
 	 * @link aggregation
 	 * @supplierCardinality 1
 	 */
-	private AfxReactor m_Reactor;
+	private final AfxReactor m_Reactor;
 
 	/**
 	 * @supplierCardinality 1
