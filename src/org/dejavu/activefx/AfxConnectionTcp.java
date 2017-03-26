@@ -202,7 +202,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public int getReceiveBufferSize() {
 		try {
-			return channel.socket().getReceiveBufferSize();
+			synchronized(this) {
+				if(channel != null) {
+					return channel.socket().getReceiveBufferSize();
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -214,7 +218,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public int getSendBufferSize() {
 		try {
-			return channel.socket().getSendBufferSize();
+			synchronized(this) {
+				if(channel != null) {
+					return channel.socket().getSendBufferSize();
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -226,7 +234,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public void setReceiveBufferSize(int newSize) {
 		try {
-			channel.socket().setReceiveBufferSize(newSize);
+			synchronized(this) {
+				if(channel != null) {
+					channel.socket().setReceiveBufferSize(newSize);
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -237,7 +249,11 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 	@Override
 	public void setSendBufferSize(int newSize) {
 		try {
-			channel.socket().setSendBufferSize(newSize);
+			synchronized(this) {
+				if(channel != null) {
+					channel.socket().setSendBufferSize(newSize);
+				}
+			}
 		} catch (SocketException ex) {
 			DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 		} catch (RuntimeException e) {
@@ -247,12 +263,16 @@ public class AfxConnectionTcp extends AfxConnection implements ReactorEventHandl
 
 	@Override
 	public SelectableChannel getHandle() {
-		return channel;
+		synchronized(this) {
+			return channel;
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "{channel:" + (channel != null ? channel.toString() : "null") + ", currentState:" + getCurrentState() + ", currentInterest:" + domain.getInterestOps(this) + ", currentReady:" + domain.getReadyOps(this) + ", numMsgsWritten:" + numMsgsWrittenForThisChannel + "}";
+		synchronized(this) {
+			return "{channel:" + (channel != null ? channel.toString() : "null") + ", currentState:" + getCurrentState() + ", currentInterest:" + domain.getInterestOps(this) + ", currentReady:" + domain.getReadyOps(this) + ", numMsgsWritten:" + numMsgsWrittenForThisChannel + "}";
+		}
 	}
 
 	@Override

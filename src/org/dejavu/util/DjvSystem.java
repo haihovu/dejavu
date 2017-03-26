@@ -140,7 +140,7 @@ public abstract class DjvSystem {
 	 * @return The log message that was generated or null if none was generated,
 	 * e.g. if the filter causes the message to be discarded.
 	 */
-	public static DjvLogMsg logTrace(DjvLogMsg.Category cat, Class srcClass, String functionName, String message) {
+	private static DjvLogMsg logTrace(DjvLogMsg.Category cat, Class<?> srcClass, String functionName, String message) {
 		if (getLogLevel() < 3) {
 			// Trace is filtered
 			return null;
@@ -166,7 +166,7 @@ public abstract class DjvSystem {
 	 * @return The log message that was generated or null if none was generated,
 	 * e.g. if the filter causes the message to be discarded.
 	 */
-	public static DjvLogMsg logInfo(DjvLogMsg.Category cat, Class srcClass, String functionName, String message) {
+	private static DjvLogMsg logInfo(DjvLogMsg.Category cat, Class<?> srcClass, String functionName, String message) {
 		if (getLogLevel() < 2) {
 			// Info is filtered
 			return null;
@@ -189,7 +189,7 @@ public abstract class DjvSystem {
 	 * e.g. if the filter causes the message to be discarded.
 	 */
 	public static DjvLogMsg logInfo(DjvLogMsg.Category cat, String message) {
-		Class srcClass = DjvSystem.class;
+		Class<?> srcClass = DjvSystem.class;
 		StackTraceElement callerTrace = retrieveCallerTrace(2, Thread.currentThread().getStackTrace());
 		try {
 			srcClass = Class.forName(callerTrace.getClassName());
@@ -211,7 +211,7 @@ public abstract class DjvSystem {
 	 * @return The log message that was generated or null if none was generated,
 	 * e.g. if the filter causes the message to be discarded.
 	 */
-	public static DjvLogMsg logWarning(DjvLogMsg.Category cat, Class srcClass, String functionName, String message) {
+	private static DjvLogMsg logWarning(DjvLogMsg.Category cat, Class<?> srcClass, String functionName, String message) {
 		if (getLogLevel() < 1) {
 			// Warning is filtered
 			return null;
@@ -234,7 +234,7 @@ public abstract class DjvSystem {
 	 * e.g. if the filter causes the message to be discarded.
 	 */
 	public static DjvLogMsg logWarning(DjvLogMsg.Category cat, String message) {
-		Class srcClass = DjvSystem.class;
+		Class<?> srcClass = DjvSystem.class;
 		StackTraceElement callerTrace = retrieveCallerTrace(2, Thread.currentThread().getStackTrace());
 		try {
 			srcClass = Class.forName(callerTrace.getClassName());
@@ -256,7 +256,7 @@ public abstract class DjvSystem {
 	 * @return The log message that was generated or null if none was generated,
 	 * e.g. if the filter causes the message to be discarded.
 	 */
-	public static DjvLogMsg logError(DjvLogMsg.Category cat, Class srcClass, String functionName, String message) {
+	private static DjvLogMsg logError(DjvLogMsg.Category cat, Class<?> srcClass, String functionName, String message) {
 		DjvLogHandler logHandler = getLogHandler();
 		if (null != logHandler) {
 			return logHandler.logMsg(cat, 0, srcClass, functionName, message);
@@ -274,7 +274,7 @@ public abstract class DjvSystem {
 	 * e.g. if the filter causes the message to be discarded.
 	 */
 	public static DjvLogMsg logError(DjvLogMsg.Category cat, String message) {
-		Class srcClass = DjvSystem.class;
+		Class<?> srcClass = DjvSystem.class;
 		StackTraceElement callerTrace = retrieveCallerTrace(2, Thread.currentThread().getStackTrace());
 		try {
 			srcClass = Class.forName(callerTrace.getClassName());
@@ -383,7 +383,7 @@ public abstract class DjvSystem {
 					}
 
 					@Override
-					public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class origClass, String origMethod, String message) {
+					public DjvLogMsg logMsg(DjvLogMsg.Category category, int severity, Class<?> origClass, String origMethod, String message) {
 						return logMsg(new DjvLogMsg(category, severity, origClass, origMethod, message));
 					}
 

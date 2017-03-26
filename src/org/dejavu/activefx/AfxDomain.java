@@ -19,39 +19,33 @@ public class AfxDomain {
 	 * Creates a new instance of the Active FX engine.
 	 *
 	 * @param name The name of this instance.
+	 * @param maxChannels The maximum number of channels supported. This allow
+	 * the domain to limit the amount of resource allocated.
 	 * @throws FsmException
+	 * @throws java.io.IOException
 	 */
-	public AfxDomain(String name) throws FsmException {
+	public AfxDomain(String name, int maxChannels) throws FsmException, IOException {
 		fsmDomain = new AfxConnectionFsmDomain(name);
 		this.name = name;
+		reactor = new AfxReactor(name, maxChannels);
 	}
 
 	/**
 	 * Starts Active FX engine, without watchdog monitoring.
 	 *
-	 * @param maxChannels The maximum number of channels supported. This allow
-	 * the domain to limit the amount of resource allocated.
 	 * @param reactorThreadPriority The priority of the reactor thread. Valid
 	 * values are integers in the range of
 	 * Thread.MIN_PRIORITY(1)-Thread.MAX_PRIORITY(10). Use values outside the
 	 * valid range to denote default priority (same priority as calling thread).
-	 * @throws IOException
 	 */
-	public void start(int maxChannels, int reactorThreadPriority) throws IOException {
+	public void start(int reactorThreadPriority) {
 		fsmDomain.start(null, -1, null);
-		synchronized (this) {
-			if (null == reactor) {
-				reactor = new AfxReactor(name, maxChannels);
-				reactor.start(reactorThreadPriority);
-			}
-		}
+		reactor.start(reactorThreadPriority);
 	}
 
 	/**
 	 * Starts Active FX engine, with watchdog monitoring.
 	 *
-	 * @param maxChannels The maximum number of channels supported. This allow
-	 * the domain to limit the amount of resource allocated.
 	 * @param watchdog Watchdog with which to monitor this Active FX engine.
 	 * @param wdPeriod Watchdog status reporting intervals, in milliseconds.
 	 * Only has meaning if a watchdog is given.
@@ -61,28 +55,17 @@ public class AfxDomain {
 	 * values are integers in the range of
 	 * Thread.MIN_PRIORITY(1)-Thread.MAX_PRIORITY(10). Use values outside the
 	 * valid range to denote default priority (same priority as calling thread).
-	 * @throws IOException
 	 */
-	public void start(int maxChannels, DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) throws IOException {
+	public void start(DjvWatchDog watchdog, int wdPeriod, Runnable failureResponse, int reactorThreadPriority) {
 		fsmDomain.start(watchdog, wdPeriod, failureResponse);
-		synchronized (this) {
-			if (reactor == null) {
-				reactor = new AfxReactor(name, maxChannels);
-				reactor.start(reactorThreadPriority);
-			}
-		}
+		reactor.start(reactorThreadPriority);
 	}
 
 	/**
 	 * Stops this Active FX engine.
 	 */
 	public void stop() {
-		synchronized (this) {
-			if (null != reactor) {
-				reactor.stop();
-				reactor = null;
-			}
-		}
+		reactor.stop();
 		fsmDomain.stop();
 	}
 
@@ -95,6 +78,7 @@ public class AfxDomain {
 	 * FSM domain, or executed immediately by the calling thread.
 	 * @return True if the event had either been queued up, or already processed
 	 * (queued = false). False if the event cannot be dispatched for any reason.
+	 * @throws java.lang.InterruptedException User interruption
 	 */
 	boolean dispatchEvent(FsmEvent event, boolean queued) throws InterruptedException {
 		return fsmDomain.dispatchEvent(event, queued);
@@ -129,16 +113,7 @@ public class AfxDomain {
 	 * Basically a bit map of the different OP values in the class SelectionKey.
 	 */
 	int getInterestOps(ReactorEventHandler handler) {
-		AfxReactor tsReactor;
-		synchronized (this) {
-			tsReactor = this.reactor;
-		}
-		if (tsReactor != null) {
-			return tsReactor.getInterestOpsFor(handler);
-		} else {
-			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
-		}
-		return 0;
+		return reactor.getInterestOpsFor(handler);
 	}
 
 	/**
@@ -150,16 +125,7 @@ public class AfxDomain {
 	 * a bit map of the different OP values in the class SelectionKey.
 	 */
 	int getReadyOps(ReactorEventHandler handler) {
-		AfxReactor tsReactor;
-		synchronized (this) {
-			tsReactor = this.reactor;
-		}
-		if (tsReactor != null) {
-			return tsReactor.getReadyOpsFor(handler);
-		} else {
-			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
-		}
-		return 0;
+		return reactor.getReadyOpsFor(handler);
 	}
 
 	/**
@@ -171,15 +137,7 @@ public class AfxDomain {
 	 * the different OP values in the class SelectionKey.
 	 */
 	void registerHandler(ReactorEventHandler handler, int events) {
-		AfxReactor tsReactor;
-		synchronized (this) {
-			tsReactor = this.reactor;
-		}
-		if (tsReactor != null) {
-			tsReactor.registerHandler(handler, events);
-		} else {
-			DjvSystem.logError(DjvLogMsg.Category.DESIGN, "No reactor");
-		}
+		reactor.registerHandler(handler, events);
 	}
 
 	/**
@@ -191,13 +149,7 @@ public class AfxDomain {
 	 * the different OP values in the class SelectionKey.
 	 */
 	void deregisterHandler(ReactorEventHandler handler, int events) {
-		AfxReactor tsReactor;
-		synchronized (this) {
-			tsReactor = this.reactor;
-		}
-		if (tsReactor != null) {
-			tsReactor.deregisterHandler(handler, events);
-		}
+		reactor.deregisterHandler(handler, events);
 	}
 
 	/**
@@ -206,20 +158,14 @@ public class AfxDomain {
 	 * @param handler Handler to be removed.
 	 */
 	void removeHandler(ReactorEventHandler handler) {
-		AfxReactor tsReactor;
-		synchronized (this) {
-			tsReactor = this.reactor;
-		}
-		if (tsReactor != null) {
-			tsReactor.removeHandler(handler);
-		}
+		reactor.removeHandler(handler);
 	}
 
 	/**
 	 * @link aggregation
 	 * @supplierCardinality 1
 	 */
-	private AfxReactor reactor;
+	private final AfxReactor reactor;
 
 	/**
 	 * @supplierCardinality 1

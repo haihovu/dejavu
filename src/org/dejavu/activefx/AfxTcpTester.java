@@ -8,8 +8,12 @@ package org.dejavu.activefx;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.dejavu.fsm.FsmException;
 import org.dejavu.util.DjvBackgroundTask;
 import org.dejavu.util.DjvExceptionUtil;
@@ -21,32 +25,57 @@ import org.dejavu.util.DjvSystem;
  * @author Hai Vu
  */
 public class AfxTcpTester {
-	final AfxAcceptor acceptor;
 	private final TestContext context = new TestContext();
-	private static final AfxDomain gDomain;
+	private static final Map<Integer, AfxDomain> gDomain = new HashMap<>(6);
 	private boolean done;
+	private final Set<AfxConnection> consumers = new HashSet<>();
+	
+	private static int writeCounter;
+	private static int readCounter;
 	
 	private class DataConsumer {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void readFailed() {
-				super.readFailed(); 
+				AfxEventHandler.super.readFailed(); 
 				connection.close();
+				done();
 			}
 
 			@Override
 			public void readCompleted(ByteBuffer returnedBuffer) {
-				super.readCompleted(returnedBuffer);
+				AfxEventHandler.super.readCompleted(returnedBuffer);
+				synchronized(AfxTcpTester.class) {
+					++readCounter;
+				}
 				initiateRead();
 			}
 		};
+
+		@Override
+		public String toString() {
+			return "DataConsumer:{" + " connection=" + connection + '}';
+		}
 		
+		private void done() {
+			synchronized(consumers) {
+				consumers.remove(connection);
+				if(consumers.isEmpty()) {
+					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, "No more consumer");
+				} else {
+					DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, consumers.size() + " consumers left");
+				}
+			}
+		}
 		private final AfxConnection connection;
 		private final ByteBuffer buf = ByteBuffer.allocate(512);
 		
 		private DataConsumer(AfxConnection conn) {
 			super();
 			connection = conn;
+			synchronized(consumers) {
+				consumers.add(conn);
+			}
 			context.increment();
 		}
 		
@@ -58,25 +87,35 @@ public class AfxTcpTester {
 					if(!connection.read(buf, handler)) {
 						DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Failed to initiate read, terminate");
 						connection.close();
+						done();
 					}
 				} catch (InterruptedException ex) {
 					connection.close();
+					done();
 				}
 			}).start();
 		}
 	}
 	
 	private class DataProducer extends DjvBackgroundTask {
-		private final AfxEventHandler handler = new AfxEventAdaptor() {
+		private final AfxEventHandler handler = new AfxEventHandler() {
 			@Override
 			public void closed() {
-				super.closed();
+				AfxEventHandler.super.closed();
 				stop();
+			}
+
+			@Override
+			public String toString() {
+				return "DataProducer:{connection:" + connection + '}';
 			}
 			
 			@Override
 			public void writeCompleted() {
-				super.writeCompleted();
+				AfxEventHandler.super.writeCompleted();
+				synchronized(AfxTcpTester.class) {
+					++writeCounter;
+				}
 				synchronized(DataProducer.this) {
 					if(--maxWrite > 0) {
 						initiateWrite();
@@ -147,6 +186,7 @@ public class AfxTcpTester {
 				if(--testerCount <=0) {
 					stopTest();
 				}
+				DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, testerCount + " producer(s) left");
 			}
 		}
 	}
@@ -154,38 +194,57 @@ public class AfxTcpTester {
 	/**
 	 * Acceptor class
 	 */
-	private class Acceptor extends AfxEventAdaptor {
-		Acceptor() {
+	private class Acceptor implements AfxEventHandler {
+		private final int port;
+		private final AfxAcceptor acceptor;
+		private final AfxDomain domain;
+		Acceptor(int port, AfxDomain domain) throws IOException {
 			super();
+			this.port = port;
+			this.acceptor = new AfxAcceptor(domain, this);
+			this.domain = domain;
 		}
 		/**
 		 * Initiates the accept process
+		 * @return 
 		 */
-		private void accept() {
+		private Acceptor accept() {
 			try {
-				acceptor.open("127.0.0.1", 12345, this);
+				acceptor.open("127.0.0.1", port);
 				acceptor.accept();
 			} catch (AfxException|IOException ex) {
 				DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
 			}
+			return this;
+		}
+		private void close() {
+			acceptor.close();
+		}
+		@Override
+		public String toString() {
+			return "Acceptor{acceptor:" + acceptor + '}';
 		}
 
 		@Override
 		public void acceptCompleted(AfxConnection newConnection) {
-			super.acceptCompleted(newConnection);
+			AfxEventHandler.super.acceptCompleted(newConnection);
 			new DataConsumer(newConnection).initiateRead();
 		}
 
 		@Override
 		public void acceptCompleted(SelectableChannel newChannel) {
-			super.acceptCompleted(newChannel);
+			AfxEventHandler.super.acceptCompleted(newChannel);
 			try {
-				AfxConnectionTcp tcp = new AfxConnectionTcp(gDomain);
-				tcp.connect(newChannel, new AfxEventAdaptor(){
+				AfxConnectionTcp tcp = new AfxConnectionTcp(domain);
+				tcp.connect(newChannel, new AfxEventHandler(){
 					@Override
 					public void openCompleted() {
 						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, tcp + " opened, start reading");
 						new DataConsumer(tcp).initiateRead();
+					}
+					@Override
+					public String toString() {
+						return "receiver:{connection:" + tcp + "}";
 					}
 				});
 			} catch (InterruptedException ex) {
@@ -197,7 +256,6 @@ public class AfxTcpTester {
 	 * Creates a test instance.
 	 */
 	public AfxTcpTester() {
-		this.acceptor = new AfxAcceptor(gDomain);
 	}
 	/**
 	 * Halts the test process.
@@ -211,20 +269,42 @@ public class AfxTcpTester {
 	/**
 	 * Conducts the test
 	 * @throws InterruptedException 
+	 * @throws org.dejavu.fsm.FsmException 
+	 * @throws java.io.IOException 
 	 */
 	@SuppressWarnings("SleepWhileInLoop")
-	void test() throws InterruptedException {
-		new Acceptor().accept();
+	void test() throws InterruptedException, FsmException, IOException {
+		int[] ports = new int[]{12344, 12345, 12346};
+		List<Acceptor> acceptors = new LinkedList<>();
 		try {
-			for(int i = 0; i < 10; ++i) {
-				AfxConnection connector = new AfxConnectionTcp(gDomain);
-				connector.open("127.0.0.1", 12345, new AfxEventAdaptor(){
-					@Override
-					public void openCompleted() {
-						super.openCompleted();
-						new DataProducer(connector, 128).start();
+			for(int port : ports) {
+				AfxDomain domain = new AfxDomain("Test" + port, 512);
+				domain.start(5);
+				synchronized(gDomain) {
+					gDomain.put(port, domain);
+				}
+				acceptors.add(new Acceptor(port, domain).accept());
+				try {
+					for(int i = 0; i < 64; ++i) {
+						AfxConnection connector = new AfxConnectionTcp(domain);
+						connector.open("127.0.0.1", port, new AfxEventHandler() {
+							@Override
+							public void openCompleted() {
+								AfxEventHandler.super.openCompleted();
+								new DataProducer(connector, 256).start();
+							}
+							@Override
+							public String toString() {
+								return "Connector:{" + connector + "}";
+							}
+						});
 					}
-				});
+				} finally {
+					DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Closing acceptor");
+					synchronized(AfxTcpTester.class) {
+						DjvSystem.logInfo(DjvLogMsg.Category.DESIGN, writeCounter + " msgs written, " + readCounter + " msgs read");
+					}
+				}
 			}
 			int countdown = 1000;
 			while(countdown-- > 0) {
@@ -237,32 +317,28 @@ public class AfxTcpTester {
 				}
 			}
 			// The producers are probably completed, give the consumers sometime to complete
-			Thread.sleep(30000);
+			Thread.sleep(40000);
 		} finally {
-			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, "Closing acceptor");
-			acceptor.close();
+			acceptors.forEach((acceptor) -> {
+				acceptor.close();
+			});
 		}
 	}
 	public static void main(String[] args) {
 		try {
 			DjvSystem.setLogLevel(2);
-			gDomain.start(1024, 5);
 			AfxTcpTester tester = new AfxTcpTester();
 			tester.test();
+			Thread.sleep(1000);
 		} catch (InterruptedException ex) {
-		} catch (IOException ex) {
-			Logger.getLogger(AfxTcpTester.class.getName()).log(Level.SEVERE, null, ex);
-		} finally {
-			gDomain.stop();
-		}
-	}
-	static {
-		AfxDomain tmp = null;
-		try {
-			tmp = new AfxDomain("Tester");
-		} catch (FsmException ex) {
+		} catch (IOException | FsmException ex) {
 			DjvSystem.logWarning(DjvLogMsg.Category.DESIGN, DjvExceptionUtil.simpleTrace(ex));
+		} finally {
+			synchronized(gDomain) {
+				gDomain.values().forEach((domain) -> {
+					domain.stop();
+				});
+			}
 		}
-		gDomain = tmp;
 	}
 }

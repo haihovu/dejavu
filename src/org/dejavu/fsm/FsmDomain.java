@@ -183,7 +183,7 @@ public abstract class FsmDomain implements Runnable {
 			synchronized (this) {
 				if (dispatchingThread == null) {
 					DjvSystem.logWarning(Category.DESIGN, "FSM domain " + getDomainName()
-							+ " is already closed, event " + event + " ignored");
+						+ " is already closed, event " + event + " ignored");
 					return false;
 				}
 			}
@@ -325,13 +325,13 @@ public abstract class FsmDomain implements Runnable {
 			if (wd != null) {
 				if (!wd.reportStatus(key, DjvWatchDog.Status.WD_NORMAL)) {
 					DjvSystem.logWarning(Category.DESIGN,
-							"Failed to report status to watchdog");
+						"Failed to report status to watchdog");
 				}
 			}
 		} else {
 			DjvSystem.logError(Category.DESIGN,
-					new StringBuilder("Event ").append(event.toString())
-							.append(" has NULL context").toString());
+				new StringBuilder("Event ").append(event.toString())
+					.append(" has NULL context").toString());
 		}
 
 		return false;

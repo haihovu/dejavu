@@ -99,7 +99,7 @@ public class AfxConnectionTLS extends AfxConnectionTcp {
 		synchronized (this) {
 			setHandshakeAborted(true);
 			setHandShakingMode(false);
-			AfxConnectionTLS.this.notifyAll();
+			this.notifyAll();
 			openFailed((FsmEvent) null);
 		}
 
@@ -132,7 +132,7 @@ public class AfxConnectionTLS extends AfxConnectionTcp {
 				}
 
 				if (isHandShakingMode()) {
-					AfxConnectionTLS.this.notifyAll(); // Tells the handshaking thread to continue
+					this.notifyAll(); // Tells the handshaking thread to continue
 				} else {
 					inAppBuffer.compact();
 					int safety = 10;
@@ -331,39 +331,37 @@ public class AfxConnectionTLS extends AfxConnectionTcp {
 				handshakeThread = new Thread(() -> {
 					try {
 						try {
-							synchronized (AfxConnectionTLS.this) {
-								sslEngine.closeOutbound();
-								int safety = 10;
-								while ((--safety > 0) && (!isHandshakeDone()) && (!isHandshakeAborted())) {
-									if (!sslEngine.isOutboundDone()) {
-										outNetBuffer.compact();
-										SSLEngineResult res = sslEngine.wrap(inAppBuffer, outNetBuffer);
-										outNetBuffer.flip();
-										enableReactorWrite();
-										AfxConnectionTLS.this.wait(100);
-										if (res.getStatus() == SSLEngineResult.Status.OK) {
-											if (res.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
-												break;
-											}
+							sslEngine.closeOutbound();
+							int safety = 10;
+							while ((--safety > 0) && (!isHandshakeDone()) && (!isHandshakeAborted())) {
+								if (!sslEngine.isOutboundDone()) {
+									outNetBuffer.compact();
+									SSLEngineResult res = sslEngine.wrap(inAppBuffer, outNetBuffer);
+									outNetBuffer.flip();
+									enableReactorWrite();
+									AfxConnectionTLS.this.wait(100);
+									if (res.getStatus() == SSLEngineResult.Status.OK) {
+										if (res.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
+											break;
 										}
-									} else if (!sslEngine.isInboundDone()) {
-										inAppBuffer.clear();
-										SSLEngineResult res = sslEngine.unwrap(inNetBuffer, inAppBuffer);
-										if (res.getStatus() == SSLEngineResult.Status.OK) {
-											if (res.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
-												break;
-											}
-										}
-										enableReactorRead();
-										AfxConnectionTLS.this.wait(100);
-									} else {
-										break;
 									}
+								} else if (!sslEngine.isInboundDone()) {
+									inAppBuffer.clear();
+									SSLEngineResult res = sslEngine.unwrap(inNetBuffer, inAppBuffer);
+									if (res.getStatus() == SSLEngineResult.Status.OK) {
+										if (res.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
+											break;
+										}
+									}
+									enableReactorRead();
+									AfxConnectionTLS.this.wait(100);
+								} else {
+									break;
 								}
-								
-								if (safety == 0) {
-									throw new SSLException("Safety break activated");
-								}
+							}
+
+							if (safety == 0) {
+								throw new SSLException("Safety break activated");
 							}
 						} catch (RuntimeException | SSLException e) {
 							DjvSystem.logWarning(Category.DESIGN, DjvExceptionUtil.simpleTrace(e));

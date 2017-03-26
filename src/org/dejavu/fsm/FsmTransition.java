@@ -13,7 +13,7 @@ public class FsmTransition {
 	/**
 	 * Initialization constructor.
 	 *
-	 * @param triggerEventId The event that triggers the transition
+	 * @param triggerEventId The event that triggers the transition. Must be positive integer values.
 	 * @param fromState The begin state from which the transition is to occur
 	 * @param toState The end state to which the transition will take place
 	 * @param action The optional action to execute during the state transition
@@ -22,6 +22,9 @@ public class FsmTransition {
 	 * take place (null if no guard is required)
 	 */
 	public FsmTransition(int triggerEventId, FsmState fromState, FsmState toState, FsmAction action, FsmAction guard) {
+		if(triggerEventId < 0) {
+			throw new RuntimeException("Invalid event ID " + triggerEventId + " must be positive integers");
+		}
 		eventId = triggerEventId;
 		this.action = action;
 		this.guard = guard;
@@ -59,7 +62,7 @@ public class FsmTransition {
 			return true;
 		} else {
 			DjvSystem.logWarning(Category.DESIGN,
-					"Failed the guard check");
+				"Failed the guard check");
 		}
 		return false;
 	}
