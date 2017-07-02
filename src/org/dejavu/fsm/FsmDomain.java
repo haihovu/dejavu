@@ -183,7 +183,7 @@ public abstract class FsmDomain implements Runnable {
 			synchronized (this) {
 				if (dispatchingThread == null) {
 					DjvSystem.logWarning(Category.DESIGN, "FSM domain " + getDomainName()
-							+ " is already closed, event " + event + " ignored");
+						+ " is already closed, event " + event + " ignored");
 					return false;
 				}
 			}

@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.KeySpec;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -247,8 +248,7 @@ public class DjvCrypto {
 			algorithm = null;
 			keyLen = -1;
 			cipherTransformation = PBEWithMD5AndDES;
-		}
-		catch(Exception ex) {
+		} catch(NoSuchAlgorithmException|RuntimeException ex) {
 			throw new DjvException(ex);
 		}
 	}
@@ -884,7 +884,7 @@ public class DjvCrypto {
 	private static String bytesToString(byte [] data) {
 		StringBuilder ret = new StringBuilder(1024);
 		if(data != null) {
-		boolean comma = false;
+			boolean comma = false;
 			for(byte x : data) {
 				if(!comma) {
 					comma = true;
